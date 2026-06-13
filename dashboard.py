@@ -54,8 +54,8 @@ def fmt_dt(iso):
 st.markdown("## 🎯 Mixfoco")
 st.caption(f"API: `{API_URL}`")
 
-aba_candidatos, aba_ativos, aba_impacto, aba_regras, aba_lojas = st.tabs([
-    "📋 Candidatos", "⚡ Ativos", "📊 Impacto", "⚙️ Regras", "🏪 Lojas"
+aba_candidatos, aba_ativos, aba_impacto, aba_regras, aba_lojas, aba_vendas = st.tabs([
+    "📋 Candidatos", "⚡ Ativos", "📊 Impacto", "⚙️ Regras", "🏪 Lojas", "💰 Vendas"
 ])
 
 
@@ -452,3 +452,124 @@ with aba_lojas:
 
             chart_data = {s["store_key"]: s[chart_metric] for s in stores}
             st.bar_chart(chart_data, use_container_width=True)
+
+
+# ══════════════════════════════════════════════════════════════════════
+# ABA 6 — VENDAS
+# ══════════════════════════════════════════════════════════════════════
+
+with aba_vendas:
+    st.subheader("Vendas & Faturamento")
+
+    # ── Filtros ──────────────────────────────────────────────────────
+    col_f1, col_f2, col_f3, col_f4 = st.columns([2, 2, 2, 1])
+    with col_f1:
+        from datetime import date as _date, timedelta
+        data_ini = st.date_input("Data Início", value=_date.today(), key="v_date_from")
+    with col_f2:
+        data_fim = st.date_input("Data Fim", value=_date.today(), key="v_date_to")
+    with col_f3:
+        loja_v = st.text_input("Loja (vazio = todas)", placeholder="ex: MIXCONECTA", key="v_store")
+    with col_f4:
+        st.markdown("&nbsp;", unsafe_allow_html=True)
+        buscar_v = st.button("🔍 Buscar", type="primary", key="buscar_vendas")
+
+    if buscar_v:
+        with st.spinner("Buscando pedidos ML..."):
+            params = f"?date_from={data_ini}&date_to={data_fim}"
+            if loja_v.strip():
+                params += f"&store={loja_v.strip().upper()}"
+            data, err = api("GET", f"/mixfoco/vendas/summary{params}")
+        if err:
+            st.error(f"Erro: {err}")
+        elif data:
+            if data.get("errors"):
+                for e in data["errors"]:
+                    st.warning(f"⚠️ {e}")
+            st.session_state["vendas_data"] = data
+
+    vdata = st.session_state.get("vendas_data")
+    if vdata:
+        s = vdata.get("summary", {})
+
+        # ── KPIs principais ──────────────────────────────────────────
+        k1, k2, k3, k4 = st.columns(4)
+        k1.metric("Vendas Aprovadas",   s.get("vendas_aprovadas", 0),
+                  help=f"{s.get('unidades_aprovadas',0)} unidades")
+        k2.metric("Faturamento ML",     fmt_brl(s.get("faturamento_ml", 0)))
+        k3.metric("Vendas Canceladas",  s.get("vendas_canceladas", 0),
+                  help=fmt_brl(s.get("faturamento_cancelado", 0)))
+        k4.metric("Ticket Médio",       fmt_brl(s.get("ticket_medio", 0)))
+
+        st.divider()
+
+        # ── KPIs secundários ─────────────────────────────────────────
+        k5, k6, k7, k8 = st.columns(4)
+        k5.metric("Tarifa ML",          fmt_brl(s.get("tarifa_ml", 0)))
+        k6.metric("Margem Contrib. %",  f"{s.get('margem_pct', 0):.1f}%")
+        k7.metric("Ticket Margem",      fmt_brl(s.get("ticket_margem", 0)))
+        k8.metric("Período",            f"{vdata.get('date_from')} → {vdata.get('date_to')}")
+
+        # ── Breakdown por modalidade ──────────────────────────────────
+        mod = s.get("por_modalidade", {})
+        if mod:
+            st.divider()
+            cols_mod = st.columns(len(mod))
+            for i, (k, v) in enumerate(mod.items()):
+                cols_mod[i].metric(k, fmt_brl(v))
+
+        # ── Gráfico de composição ─────────────────────────────────────
+        fat = s.get("faturamento_ml", 0)
+        tarifa = s.get("tarifa_ml", 0)
+        if fat > 0:
+            st.divider()
+            col_chart, col_leg = st.columns([2, 1])
+            with col_chart:
+                st.markdown("**Composição do Faturamento**")
+                margem_val = fat - tarifa
+                chart_comp = {
+                    "Margem": round(margem_val, 2),
+                    "Tarifa ML": round(tarifa, 2),
+                }
+                st.bar_chart(chart_comp, use_container_width=True)
+            with col_leg:
+                st.markdown("&nbsp;")
+                st.markdown(f"**Faturamento:** {fmt_brl(fat)}")
+                st.markdown(f"**Tarifa ML:** {fmt_brl(tarifa)}")
+                st.markdown(f"**Margem bruta:** {fmt_brl(margem_val)}")
+
+        # ── Tabela de pedidos ─────────────────────────────────────────
+        st.divider()
+        orders = vdata.get("orders", [])
+        if orders:
+            st.markdown(f"### Pedidos ({len(orders)} registros)")
+
+            # Filtro por status
+            status_filter = st.selectbox(
+                "Status", ["Todos", "paid", "cancelled"],
+                format_func=lambda x: {"Todos": "Todos", "paid": "Aprovados", "cancelled": "Cancelados"}[x],
+                key="v_status_filter",
+            )
+            filtered = orders if status_filter == "Todos" else [o for o in orders if o["status"] == status_filter]
+
+            # Busca por título/SKU
+            search_v = st.text_input("Buscar por título ou SKU", key="v_search")
+            if search_v.strip():
+                q = search_v.strip().lower()
+                filtered = [o for o in filtered if q in o["title"].lower() or q in o["sku"].lower()]
+
+            # Renderiza tabela
+            for o in filtered[:100]:
+                status_icon = "✅" if o["status"] == "paid" else "❌"
+                with st.container(border=True):
+                    c1, c2, c3, c4, c5 = st.columns([4, 2, 1, 1, 1])
+                    with c1:
+                        st.markdown(f"{status_icon} **{o['title'][:60]}{'…' if len(o['title'])>60 else ''}**")
+                        st.caption(f"🏪 {o['store_key']} · SKU: `{o['sku'] or '—'}` · {o['date_created']} · {o.get('modalidade','')}")
+                    c2.metric("Faturamento", fmt_brl(o["faturamento_ml"]))
+                    c3.metric("Qtd", o["quantity"])
+                    c4.metric("Unit.", fmt_brl(o["unit_price"]))
+                    c5.metric("Tarifa", fmt_brl(o.get("sale_fee", 0)))
+
+            if len(filtered) > 100:
+                st.caption(f"Mostrando 100 de {len(filtered)} pedidos.")
