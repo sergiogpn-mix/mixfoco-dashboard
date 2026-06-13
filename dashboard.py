@@ -1,9 +1,6 @@
 """
 Mixfoco Dashboard — Streamlit
-Candidatos · Ativos · Impacto · Regras
-
-Local:  streamlit run dashboard.py
-Deploy: mesmo serviço Railway (PORT automático)
+Candidatos · Ativos · Impacto · Regras · Lojas
 """
 import os
 import requests
@@ -57,8 +54,8 @@ def fmt_dt(iso):
 st.markdown("## 🎯 Mixfoco")
 st.caption(f"API: `{API_URL}`")
 
-aba_candidatos, aba_ativos, aba_impacto, aba_regras = st.tabs([
-    "📋 Candidatos", "⚡ Ativos", "📊 Impacto", "⚙️ Regras"
+aba_candidatos, aba_ativos, aba_impacto, aba_regras, aba_lojas = st.tabs([
+    "📋 Candidatos", "⚡ Ativos", "📊 Impacto", "⚙️ Regras", "🏪 Lojas"
 ])
 
 
@@ -266,7 +263,6 @@ with aba_impacto:
 with aba_regras:
     st.subheader("Regras de automação")
 
-    # Listar regras existentes
     rules_data, err = api("GET", "/mixfoco/rules")
     rules = rules_data.get("rules", []) if rules_data else []
 
@@ -375,3 +371,84 @@ with aba_regras:
                     f"{len(r.get('applied', []))} ativados · "
                     f"{r['total_cooldown']} cooldown"
                 )
+
+
+# ══════════════════════════════════════════════════════════════════════
+# ABA 5 — LOJAS
+# ══════════════════════════════════════════════════════════════════════
+
+with aba_lojas:
+    st.subheader("Comparativo por Loja")
+
+    col_per, col_btn_loja = st.columns([3, 1])
+    with col_per:
+        period_loja = st.selectbox(
+            "Período",
+            ["week", "today", "month"],
+            format_func=lambda x: {"week": "Semana", "today": "Hoje", "month": "Mês"}[x],
+            key="period_loja",
+        )
+    with col_btn_loja:
+        st.markdown("&nbsp;", unsafe_allow_html=True)
+        carregar_lojas = st.button("🔄 Carregar", type="primary", key="carregar_lojas")
+
+    if carregar_lojas or "lojas_summary" not in st.session_state:
+        with st.spinner("Buscando dados de todas as lojas..."):
+            data, err = api("GET", f"/mixfoco/stores/summary?period={period_loja}")
+        if err:
+            st.error(f"Erro: {err}")
+        elif data:
+            st.session_state["lojas_summary"] = data
+
+    summary = st.session_state.get("lojas_summary")
+    if summary:
+        stores = summary.get("stores", [])
+        if not stores:
+            st.info("Nenhuma loja com dados no período.")
+        else:
+            # ── KPIs totais ──────────────────────────────────────────
+            total_spend   = sum(s["spend"] for s in stores)
+            total_revenue = sum(s["revenue"] for s in stores)
+            total_conv    = sum(s["conversions"] for s in stores)
+            total_cand    = sum(s["candidates"] for s in stores)
+
+            k1, k2, k3, k4 = st.columns(4)
+            k1.metric("Gasto total", fmt_brl(total_spend))
+            k2.metric("Receita total", fmt_brl(total_revenue))
+            k3.metric("Conversões", total_conv)
+            k4.metric("Candidatos Mixfoco", total_cand)
+
+            st.divider()
+
+            # ── Cards por loja ────────────────────────────────────────
+            st.markdown("### Detalhes por loja")
+            for s in stores:
+                with st.container(border=True):
+                    st.markdown(f"#### 🏪 {s['name']} `{s['store_key']}`")
+                    c1, c2, c3, c4, c5, c6 = st.columns(6)
+                    c1.metric("Gasto",        fmt_brl(s["spend"]))
+                    c2.metric("Receita",       fmt_brl(s["revenue"]))
+                    c3.metric("ROAS médio",    f"{s['avg_roas']}x")
+                    c4.metric("Conversões",    s["conversions"])
+                    c5.metric("Candidatos",    s["candidates"])
+                    c6.metric("Anúncios",      s["num_ads"])
+
+            st.divider()
+
+            # ── Gráfico comparativo ───────────────────────────────────
+            st.markdown("### Gráfico comparativo")
+            chart_metric = st.selectbox(
+                "Métrica",
+                ["revenue", "spend", "avg_roas", "conversions", "candidates"],
+                format_func=lambda x: {
+                    "revenue":     "Receita (R$)",
+                    "spend":       "Gasto (R$)",
+                    "avg_roas":    "ROAS médio",
+                    "conversions": "Conversões",
+                    "candidates":  "Candidatos Mixfoco",
+                }[x],
+                key="chart_metric",
+            )
+
+            chart_data = {s["store_key"]: s[chart_metric] for s in stores}
+            st.bar_chart(chart_data, use_container_width=True)
