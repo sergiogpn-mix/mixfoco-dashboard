@@ -459,18 +459,22 @@ with aba_lojas:
 # ══════════════════════════════════════════════════════════════════════
 
 with aba_vendas:
+    import pandas as pd
+    from datetime import date as _date
+
     st.subheader("Vendas & Faturamento")
 
     # ── Filtros ──────────────────────────────────────────────────────
-    col_f1, col_f2, col_f3, col_f4 = st.columns([2, 2, 2, 1])
+    col_f1, col_f2, col_f3, col_f4, col_f5 = st.columns([2, 2, 2, 2, 1])
     with col_f1:
-        from datetime import date as _date, timedelta
         data_ini = st.date_input("Data Início", value=_date.today(), key="v_date_from")
     with col_f2:
         data_fim = st.date_input("Data Fim", value=_date.today(), key="v_date_to")
     with col_f3:
         loja_v = st.text_input("Loja (vazio = todas)", placeholder="ex: MIXCONECTA", key="v_store")
     with col_f4:
+        status_v = st.selectbox("Status", ["Todos", "Aprovados", "Cancelados"], key="v_status")
+    with col_f5:
         st.markdown("&nbsp;", unsafe_allow_html=True)
         buscar_v = st.button("🔍 Buscar", type="primary", key="buscar_vendas")
 
@@ -483,93 +487,137 @@ with aba_vendas:
         if err:
             st.error(f"Erro: {err}")
         elif data:
-            if data.get("errors"):
-                for e in data["errors"]:
-                    st.warning(f"⚠️ {e}")
+            for e in data.get("errors", []):
+                st.warning(f"⚠️ {e}")
             st.session_state["vendas_data"] = data
 
     vdata = st.session_state.get("vendas_data")
     if vdata:
         s = vdata.get("summary", {})
+        fat   = s.get("faturamento_ml", 0)
+        tarif = s.get("tarifa_ml", 0)
+        custo = s.get("custo_total", 0)
+        impos = s.get("imposto_total", 0)
+        frete_c = s.get("frete_comprador", 0)
+        frete_v = s.get("frete_vendedor", 0)
+        marg  = s.get("margem_total", 0)
 
-        # ── KPIs principais ──────────────────────────────────────────
-        k1, k2, k3, k4 = st.columns(4)
-        k1.metric("Vendas Aprovadas",   s.get("vendas_aprovadas", 0),
+        # ── KPIs linha 1 ─────────────────────────────────────────────
+        k1, k2, k3, k4, k5, k6 = st.columns(6)
+        k1.metric("Vendas Aprovadas",  s.get("vendas_aprovadas", 0),
                   help=f"{s.get('unidades_aprovadas',0)} unidades")
-        k2.metric("Faturamento ML",     fmt_brl(s.get("faturamento_ml", 0)))
-        k3.metric("Vendas Canceladas",  s.get("vendas_canceladas", 0),
+        k2.metric("Faturamento ML",    fmt_brl(fat))
+        k3.metric("Canceladas",        s.get("vendas_canceladas", 0),
                   help=fmt_brl(s.get("faturamento_cancelado", 0)))
-        k4.metric("Ticket Médio",       fmt_brl(s.get("ticket_medio", 0)))
+        k4.metric("Custo & Imposto",   fmt_brl(custo + impos))
+        k5.metric("Tarifa de Venda",   fmt_brl(tarif))
+        k6.metric("Margem Contrib.",   fmt_brl(marg),
+                  delta=f"{s.get('margem_pct',0):.1f}%")
 
-        st.divider()
-
-        # ── KPIs secundários ─────────────────────────────────────────
-        k5, k6, k7, k8 = st.columns(4)
-        k5.metric("Tarifa ML",          fmt_brl(s.get("tarifa_ml", 0)))
-        k6.metric("Margem Contrib. %",  f"{s.get('margem_pct', 0):.1f}%")
-        k7.metric("Ticket Margem",      fmt_brl(s.get("ticket_margem", 0)))
-        k8.metric("Período",            f"{vdata.get('date_from')} → {vdata.get('date_to')}")
-
-        # ── Breakdown por modalidade ──────────────────────────────────
+        # ── KPIs linha 2 ─────────────────────────────────────────────
+        k7, k8, k9, k10, k11, k12 = st.columns(6)
         mod = s.get("por_modalidade", {})
-        if mod:
-            st.divider()
-            cols_mod = st.columns(len(mod))
-            for i, (k, v) in enumerate(mod.items()):
-                cols_mod[i].metric(k, fmt_brl(v))
+        k7.metric("Full",     fmt_brl(mod.get("Full", 0)))
+        k8.metric("Premium",  fmt_brl(mod.get("Premium", 0)))
+        k9.metric("Clássico", fmt_brl(mod.get("Clássico", 0)))
+        k10.metric("Ticket Médio",   fmt_brl(s.get("ticket_medio", 0)))
+        k11.metric("Ticket Margem",  fmt_brl(s.get("ticket_margem", 0)))
+        k12.metric("MC %",           f"{s.get('margem_pct',0):.1f}%")
 
-        # ── Gráfico de composição ─────────────────────────────────────
-        fat = s.get("faturamento_ml", 0)
-        tarifa = s.get("tarifa_ml", 0)
-        if fat > 0:
-            st.divider()
-            col_chart, col_leg = st.columns([2, 1])
-            with col_chart:
-                st.markdown("**Composição do Faturamento**")
-                margem_val = fat - tarifa
-                chart_comp = {
-                    "Margem": round(margem_val, 2),
-                    "Tarifa ML": round(tarifa, 2),
-                }
-                st.bar_chart(chart_comp, use_container_width=True)
-            with col_leg:
-                st.markdown("&nbsp;")
-                st.markdown(f"**Faturamento:** {fmt_brl(fat)}")
-                st.markdown(f"**Tarifa ML:** {fmt_brl(tarifa)}")
-                st.markdown(f"**Margem bruta:** {fmt_brl(margem_val)}")
+        # ── Nivelar Custo por SKU ─────────────────────────────────────
+        with st.expander("⚙️ Nivelar Custo & Imposto por SKU"):
+            custos_data, _ = api("GET", "/mixfoco/custos")
+            custos_map     = (custos_data or {}).get("custos", {})
+
+            orders_all = vdata.get("orders", [])
+            skus_uniq  = sorted({o["sku"] for o in orders_all if o["sku"]})
+
+            if skus_uniq:
+                custo_rows = []
+                for sku in skus_uniq:
+                    cfg = custos_map.get(sku, {})
+                    custo_rows.append({
+                        "SKU":          sku,
+                        "Custo (R$)":   cfg.get("custo", 0.0),
+                        "Imposto (%)":  cfg.get("imposto_pct", 0.0),
+                    })
+                df_custos = pd.DataFrame(custo_rows)
+                edited = st.data_editor(df_custos, use_container_width=True,
+                                        num_rows="fixed", key="editor_custos")
+                if st.button("💾 Salvar custos", key="salvar_custos"):
+                    payload = {
+                        row["SKU"]: {"custo": row["Custo (R$)"], "imposto_pct": row["Imposto (%)"]}
+                        for _, row in edited.iterrows() if row["SKU"]
+                    }
+                    result, err = api("POST", "/mixfoco/custos", json=payload)
+                    if err:
+                        st.error(f"Erro: {err}")
+                    else:
+                        st.success(f"✅ {result['total_skus']} SKUs salvos — refaça a busca para atualizar a tabela")
 
         # ── Tabela de pedidos ─────────────────────────────────────────
         st.divider()
         orders = vdata.get("orders", [])
-        if orders:
-            st.markdown(f"### Pedidos ({len(orders)} registros)")
+        status_map = {"Todos": None, "Aprovados": "paid", "Cancelados": "cancelled"}
+        status_sel = status_map[status_v]
+        filtered = [o for o in orders if not status_sel or o["status"] == status_sel]
 
-            # Filtro por status
-            status_filter = st.selectbox(
-                "Status", ["Todos", "paid", "cancelled"],
-                format_func=lambda x: {"Todos": "Todos", "paid": "Aprovados", "cancelled": "Cancelados"}[x],
-                key="v_status_filter",
+        search_v = st.text_input("🔍 Buscar por título ou SKU", key="v_search")
+        if search_v.strip():
+            q = search_v.strip().lower()
+            filtered = [o for o in filtered if q in o["title"].lower() or q in o["sku"].lower()]
+
+        st.caption(f"{len(filtered)} de {len(orders)} registros · {vdata.get('date_from')} → {vdata.get('date_to')}")
+
+        if filtered:
+            rows = []
+            for o in filtered:
+                rows.append({
+                    "Anúncio":            o["title"],
+                    "Conta":              o["store_key"],
+                    "SKU":                o["sku"] or "—",
+                    "Data":               o["date_created"],
+                    "Modalidade":         o.get("modalidade", ""),
+                    "Valor Unit.":        o["unit_price"],
+                    "Qtd.":               o["quantity"],
+                    "Faturamento ML":     o["faturamento_ml"],
+                    "Custo (-)":          o["custo"],
+                    "Imposto (-)":        o["imposto"],
+                    "Tarifa de Venda (-)": o["tarifa_venda"],
+                    "Frete Comprador (-)": o["frete_comp"],
+                    "Frete Vendedor (-)":  o["frete_vend"],
+                    "Margem Contrib. (-)": o["margem"],
+                    "MC em %":            o["mc_pct"],
+                    "Status":             "✅" if o["status"] == "paid" else "❌",
+                })
+
+            df = pd.DataFrame(rows)
+
+            # Formata colunas monetárias
+            money_cols = ["Valor Unit.", "Faturamento ML", "Custo (-)", "Imposto (-)",
+                          "Tarifa de Venda (-)", "Frete Comprador (-)",
+                          "Frete Vendedor (-)", "Margem Contrib. (-)"]
+
+            st.dataframe(
+                df,
+                use_container_width=True,
+                hide_index=True,
+                column_config={
+                    "Anúncio":             st.column_config.TextColumn(width="large"),
+                    "Valor Unit.":         st.column_config.NumberColumn(format="R$ %.2f"),
+                    "Faturamento ML":      st.column_config.NumberColumn(format="R$ %.2f"),
+                    "Custo (-)":           st.column_config.NumberColumn(format="R$ %.2f"),
+                    "Imposto (-)":         st.column_config.NumberColumn(format="R$ %.2f"),
+                    "Tarifa de Venda (-)": st.column_config.NumberColumn(format="R$ %.2f"),
+                    "Frete Comprador (-)": st.column_config.NumberColumn(format="R$ %.2f"),
+                    "Frete Vendedor (-)":  st.column_config.NumberColumn(format="R$ %.2f"),
+                    "Margem Contrib. (-)": st.column_config.NumberColumn(format="R$ %.2f"),
+                    "MC em %":             st.column_config.NumberColumn(format="%.1f%%"),
+                },
             )
-            filtered = orders if status_filter == "Todos" else [o for o in orders if o["status"] == status_filter]
 
-            # Busca por título/SKU
-            search_v = st.text_input("Buscar por título ou SKU", key="v_search")
-            if search_v.strip():
-                q = search_v.strip().lower()
-                filtered = [o for o in filtered if q in o["title"].lower() or q in o["sku"].lower()]
-
-            # Renderiza tabela
-            for o in filtered[:100]:
-                status_icon = "✅" if o["status"] == "paid" else "❌"
-                with st.container(border=True):
-                    c1, c2, c3, c4, c5 = st.columns([4, 2, 1, 1, 1])
-                    with c1:
-                        st.markdown(f"{status_icon} **{o['title'][:60]}{'…' if len(o['title'])>60 else ''}**")
-                        st.caption(f"🏪 {o['store_key']} · SKU: `{o['sku'] or '—'}` · {o['date_created']} · {o.get('modalidade','')}")
-                    c2.metric("Faturamento", fmt_brl(o["faturamento_ml"]))
-                    c3.metric("Qtd", o["quantity"])
-                    c4.metric("Unit.", fmt_brl(o["unit_price"]))
-                    c5.metric("Tarifa", fmt_brl(o.get("sale_fee", 0)))
-
-            if len(filtered) > 100:
-                st.caption(f"Mostrando 100 de {len(filtered)} pedidos.")
+            # Export CSV
+            csv = df.to_csv(index=False).encode("utf-8")
+            st.download_button("⬇️ Exportar CSV", csv,
+                               file_name=f"vendas_{data_ini}_{data_fim}.csv",
+                               mime="text/csv")
