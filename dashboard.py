@@ -572,40 +572,39 @@ with aba_vendas:
         if filtered:
             rows = []
             for o in filtered:
-                fat_o  = o["faturamento_ml"]
-                cst    = float(o.get("custo", 0))
-                imp_pct= float(o.get("imposto_pct", 0))
-                imp    = round(fat_o * imp_pct / 100, 2)
-                tar    = o["tarifa_venda"]
-                fc     = o["frete_comp"]
-                fv     = o["frete_vend"]
-                marg   = round(fat_o - cst - imp - tar - fv, 2)
-                mc_pct = round(marg / fat_o * 100, 2) if fat_o else 0.0
+                fat_o   = o["faturamento_ml"]
+                cst     = float(o.get("custo", 0))
+                imp_pct = float(o.get("imposto_pct", 0))
+                imp     = round(fat_o * imp_pct / 100, 2)
+                tar     = o["tarifa_venda"]
+                fc      = o["frete_comp"]
+                fv      = o["frete_vend"]
+                marg    = round(fat_o - cst - imp - tar - fv, 2)
+                mc_pct  = round(marg / fat_o * 100, 2) if fat_o else 0.0
                 rows.append({
-                    "Anúncio":             o["title"],
-                    "Conta":               o["store_key"],
-                    "SKU":                 o["sku"] or "",
-                    "Data":                o["date_created"],
-                    "Frete":               o.get("modalidade", ""),
-                    "Valor Unit.":         o["unit_price"],
-                    "Qtd.":                int(o["quantity"]),
-                    "Faturamento ML":      fat_o,
-                    "Custo (-)":           cst,
-                    "Imposto (%)":         imp_pct,
-                    "Tarifa de Venda (-)": tar,
-                    "Frete Comprador (-)": fc,
-                    "Frete Vendedor (-)":  fv,
-                    "Margem Contrib. (-)": marg,
-                    "MC em %":             mc_pct,
-                    "_sku":                o["sku"],
+                    "Anúncio":               o["title"],
+                    "SKU":                   o["sku"] or "",
+                    "Data":                  o["date_created"],
+                    "Frete":                 o.get("modalidade", ""),
+                    "Valor Unit.":           o["unit_price"],
+                    "Qtd.":                  int(o["quantity"]),
+                    "Faturamento ML":        fat_o,
+                    "Custo (-)":             cst,
+                    "Imposto (%)":           imp_pct,
+                    "Tarifa de Venda (-)":   tar,
+                    "Frete Comprador (-)":   fc,
+                    "Frete Vendedor (-)":    fv,
+                    "Margem de Contrib. (-)": marg,
+                    "MC %":                  mc_pct,
+                    "_sku":                  o["sku"],
                 })
 
             df = pd.DataFrame(rows)
 
-            READ_ONLY = ["Anúncio", "Conta", "SKU", "Data", "Frete",
-                         "Valor Unit.", "Qtd.", "Faturamento ML",
-                         "Tarifa de Venda (-)", "Frete Comprador (-)",
-                         "Frete Vendedor (-)", "Margem Contrib. (-)", "MC em %", "_sku"]
+            READ_ONLY = ["Anúncio", "SKU", "Data", "Frete", "Valor Unit.", "Qtd.",
+                         "Faturamento ML", "Tarifa de Venda (-)",
+                         "Frete Comprador (-)", "Frete Vendedor (-)",
+                         "Margem de Contrib. (-)", "MC %", "_sku"]
 
             edited = st.data_editor(
                 df,
@@ -613,28 +612,26 @@ with aba_vendas:
                 hide_index=True,
                 disabled=READ_ONLY,
                 column_config={
-                    "Anúncio":             st.column_config.TextColumn("Anúncio", width="large"),
-                    "Conta":               st.column_config.TextColumn("Conta", width="small"),
-                    "SKU":                 st.column_config.TextColumn("SKU", width="small"),
-                    "Data":                st.column_config.TextColumn("Data", width="small"),
-                    "Frete":               st.column_config.TextColumn("Frete", width="small"),
-                    "Valor Unit.":         st.column_config.NumberColumn("Valor Unit.", format="%.2f"),
-                    "Qtd.":                st.column_config.NumberColumn("Qtd.", width="small"),
-                    "Faturamento ML":      st.column_config.NumberColumn("Faturamento ML", format="%.2f"),
-                    "Custo (-)":           st.column_config.NumberColumn("Custo (-)", format="%.2f", min_value=0.0),
-                    "Imposto (%)":         st.column_config.NumberColumn("Imposto (%)", format="%.2f%%", min_value=0.0, max_value=100.0),
-                    "Tarifa de Venda (-)": st.column_config.NumberColumn("Tarifa de Venda (-)", format="%.2f"),
-                    "Frete Comprador (-)": st.column_config.NumberColumn("Frete Comprador (-)", format="%.2f"),
-                    "Frete Vendedor (-)":  st.column_config.NumberColumn("Frete Vendedor (-)", format="%.2f"),
-                    "Margem Contrib. (-)": st.column_config.NumberColumn("Margem Contrib. (-)", format="%.2f"),
-                    "MC em %":             st.column_config.NumberColumn("MC em %", format="%.1f%%"),
-                    "_sku":                None,
+                    "Anúncio":               st.column_config.TextColumn(width="large"),
+                    "SKU":                   st.column_config.TextColumn(width="small"),
+                    "Data":                  st.column_config.TextColumn(width="small"),
+                    "Frete":                 st.column_config.TextColumn(width="small"),
+                    "Valor Unit.":           st.column_config.NumberColumn(format="%.2f"),
+                    "Qtd.":                  st.column_config.NumberColumn(width="small"),
+                    "Faturamento ML":        st.column_config.NumberColumn(format="%.2f"),
+                    "Custo (-)":             st.column_config.NumberColumn(format="%.2f", min_value=0.0),
+                    "Imposto (%)":           st.column_config.NumberColumn(format="%.2f", min_value=0.0, max_value=100.0),
+                    "Tarifa de Venda (-)":   st.column_config.NumberColumn(format="%.2f"),
+                    "Frete Comprador (-)":   st.column_config.NumberColumn(format="%.2f"),
+                    "Frete Vendedor (-)":    st.column_config.NumberColumn(format="%.2f"),
+                    "Margem de Contrib. (-)": st.column_config.NumberColumn(format="%.2f"),
+                    "MC %":                  st.column_config.NumberColumn(format="%.1f"),
+                    "_sku":                  None,
                 },
                 key="tabela_vendas",
             )
 
-            # Salvar custos editados e recalcular
-            col_save, col_csv = st.columns([2, 8])
+            col_save, col_csv = st.columns([3, 7])
             with col_save:
                 if st.button("💾 Salvar custos & recalcular", key="salvar_tabela"):
                     payload = {}
