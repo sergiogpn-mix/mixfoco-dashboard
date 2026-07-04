@@ -54,8 +54,8 @@ def fmt_dt(iso):
 st.markdown("## 🎯 Mixfoco")
 st.caption(f"API: `{API_URL}`")
 
-aba_candidatos, aba_ativos, aba_impacto, aba_regras, aba_lojas, aba_vendas = st.tabs([
-    "📋 Candidatos", "⚡ Ativos", "📊 Impacto", "⚙️ Regras", "🏪 Lojas", "💰 Vendas"
+aba_candidatos, aba_ativos, aba_impacto, aba_regras, aba_lojas, aba_vendas, aba_sac = st.tabs([
+    "📋 Candidatos", "⚡ Ativos", "📊 Impacto", "⚙️ Regras", "🏪 Lojas", "💰 Vendas", "🎧 SAC"
 ])
 
 
@@ -654,3 +654,333 @@ with aba_vendas:
                 st.download_button("⬇️ Exportar CSV", csv,
                                    file_name=f"vendas_{data_ini}_{data_fim}.csv",
                                    mime="text/csv")
+
+
+# ══════════════════════════════════════════════════════════════════════
+# ABA 7 — SAC (Atendimento)
+# ══════════════════════════════════════════════════════════════════════
+
+with aba_sac:
+    import pandas as pd
+    from datetime import date as _date
+
+    st.subheader("SAC — Atendimento ao Cliente")
+
+    sub_painel, sub_tickets, sub_kb = st.tabs(["📊 Painel", "🎫 Tickets", "📚 Base de Conhecimento"])
+
+    # ── PAINEL ───────────────────────────────────────────────────────
+    with sub_painel:
+        col_d1, col_d2, col_d3 = st.columns([2, 2, 1])
+        with col_d1:
+            sac_de = st.date_input("De", value=_date.today().replace(day=1), key="sac_de")
+        with col_d2:
+            sac_ate = st.date_input("Até", value=_date.today(), key="sac_ate")
+        with col_d3:
+            st.markdown("&nbsp;", unsafe_allow_html=True)
+            carregar_painel = st.button("🔄 Carregar", key="carregar_sac_painel")
+
+        if carregar_painel or "sac_dashboard" not in st.session_state:
+            with st.spinner("Buscando KPIs do SAC..."):
+                data, err = api("GET", f"/mixfoco/sac/dashboard?de={sac_de}&ate={sac_ate}")
+            if err:
+                st.error(f"Erro: {err}")
+            elif data:
+                st.session_state["sac_dashboard"] = data
+
+        dash = st.session_state.get("sac_dashboard")
+        if dash:
+            k1, k2, k3, k4, k5, k6 = st.columns(6)
+            k1.metric("Volume", dash.get("volume", dash.get("total", "—")))
+            k2.metric("TMA", dash.get("tma", "—"))
+            k3.metric("TMR", dash.get("tmr", "—"))
+            sla_v = dash.get("sla")
+            k4.metric("SLA", f"{sla_v}%" if sla_v is not None else "—")
+            k5.metric("Satisfação", dash.get("satisfacao", dash.get("csat", "—")))
+            k6.metric("Abertos", dash.get("abertos", dash.get("open", "—")))
+
+            ranking = dash.get("ranking") or dash.get("ranking_operadores")
+            if ranking:
+                st.markdown("### Ranking de operadores")
+                st.dataframe(pd.DataFrame(ranking), use_container_width=True, hide_index=True)
+
+            with st.expander("Ver dados completos (JSON)"):
+                st.json(dash)
+        else:
+            st.info("Clique em Carregar para ver os KPIs do período.")
+
+    # ── TICKETS ──────────────────────────────────────────────────────
+    with sub_tickets:
+        col_t1, col_t2, col_t3, col_t4, col_t5 = st.columns([2, 2, 2, 2, 1])
+        with col_t1:
+            status_t = st.selectbox(
+                "Status",
+                ["Todos", "aberto", "em_andamento", "aguardando", "resolvido", "fechado"],
+                key="sac_status",
+            )
+        with col_t2:
+            canal_t = st.text_input("Canal", placeholder="ex: ML, whatsapp", key="sac_canal")
+        with col_t3:
+            urgencia_t = st.selectbox("Urgência", ["Todas", "baixa", "media", "alta", "critica"], key="sac_urgencia")
+        with col_t4:
+            busca_t = st.text_input("Buscar", placeholder="pedido, cliente...", key="sac_busca")
+        with col_t5:
+            st.markdown("&nbsp;", unsafe_allow_html=True)
+            buscar_tickets = st.button("🔍", key="buscar_sac_tickets")
+
+        if buscar_tickets or "sac_tickets" not in st.session_state:
+            params = "?limit=50"
+            if status_t != "Todos":
+                params += f"&status={status_t}"
+            if canal_t.strip():
+                params += f"&canal={canal_t.strip()}"
+            if urgencia_t != "Todas":
+                params += f"&urgencia={urgencia_t}"
+            if busca_t.strip():
+                params += f"&q={busca_t.strip()}"
+            with st.spinner("Buscando tickets..."):
+                data, err = api("GET", f"/mixfoco/sac/tickets{params}")
+            if err:
+                st.error(f"Erro: {err}")
+            elif data is not None:
+                st.session_state["sac_tickets"] = data.get("tickets", data if isinstance(data, list) else [])
+
+        tickets = st.session_state.get("sac_tickets", [])
+        if not tickets:
+            st.info("Nenhum ticket encontrado.")
+        else:
+            st.markdown(f"**{len(tickets)} ticket(s)**")
+            for t in tickets:
+                tid = t.get("id") or t.get("ticket_id")
+                with st.container(border=True):
+                    col_i, col_s, col_b = st.columns([5, 2, 2])
+                    with col_i:
+                        st.markdown(f"**#{tid}** · {t.get('cliente', t.get('comprador', '—'))}")
+                        st.caption(f"{t.get('canal', '—')} · {t.get('assunto', t.get('titulo', '—'))}")
+                    with col_s:
+                        st.caption(f"Status: {t.get('status', '—')}")
+                        st.caption(f"Urgência: {t.get('urgencia', '—')}")
+                    with col_b:
+                        st.markdown("&nbsp;", unsafe_allow_html=True)
+                        if st.button("👁️ Abrir", key=f"abrir_{tid}"):
+                            st.session_state["sac_ticket_aberto"] = tid
+                            st.rerun()
+
+        ticket_aberto = st.session_state.get("sac_ticket_aberto")
+        if ticket_aberto:
+            st.divider()
+            with st.spinner("Carregando ticket..."):
+                detalhe, err = api("GET", f"/mixfoco/sac/tickets/{ticket_aberto}")
+            if err:
+                st.error(f"Erro: {err}")
+            else:
+                st.markdown(f"### 🎫 Ticket #{ticket_aberto}")
+                col_msgs, col_ia = st.columns([3, 2])
+
+                with col_msgs:
+                    mensagens = detalhe.get("mensagens", detalhe.get("mensagens_ticket", []))
+                    for m in mensagens:
+                        autor = m.get("autor", m.get("de", "—"))
+                        st.markdown(f"**{autor}** _{fmt_dt(m.get('data', m.get('created_at')))}_")
+                        st.write(m.get("texto", m.get("mensagem", "")))
+                        st.divider()
+
+                    nova_msg = st.text_area("Responder", key=f"nova_msg_{ticket_aberto}")
+                    if st.button("📤 Enviar resposta", key=f"enviar_{ticket_aberto}"):
+                        result, err = api(
+                            "POST",
+                            f"/mixfoco/sac/tickets/{ticket_aberto}/mensagem",
+                            json={"texto": nova_msg},
+                        )
+                        if err:
+                            st.error(f"Erro: {err}")
+                        else:
+                            st.success("✅ Resposta enviada!")
+                            st.rerun()
+
+                with col_ia:
+                    st.markdown("#### 🤖 Assistente IA")
+                    if st.button("💡 Sugerir resposta", key=f"sugerir_{ticket_aberto}"):
+                        with st.spinner("Gerando sugestão..."):
+                            sug, err = api("POST", "/mixfoco/sac/ia/sugerir", json={"ticket_id": ticket_aberto})
+                        if err:
+                            st.error(f"Erro: {err}")
+                        else:
+                            st.session_state[f"sugestao_{ticket_aberto}"] = sug.get(
+                                "sugestao", sug.get("resposta", sug)
+                            )
+
+                    sugestao = st.session_state.get(f"sugestao_{ticket_aberto}")
+                    if sugestao:
+                        st.text_area(
+                            "Sugestão da IA", value=str(sugestao),
+                            key=f"sugestao_texto_{ticket_aberto}", height=150,
+                        )
+                        if st.button("↩️ Usar sugestão", key=f"usar_sugestao_{ticket_aberto}"):
+                            st.session_state[f"nova_msg_{ticket_aberto}"] = str(sugestao)
+                            st.rerun()
+
+                    col_ia1, col_ia2 = st.columns(2)
+                    with col_ia1:
+                        if st.button("🏷️ Classificar", key=f"classificar_{ticket_aberto}"):
+                            with st.spinner("Classificando..."):
+                                cls, err = api("POST", "/mixfoco/sac/ia/classificar", json={"ticket_id": ticket_aberto})
+                            if err:
+                                st.error(f"Erro: {err}")
+                            else:
+                                st.json(cls)
+                        if st.button("📋 Resumir", key=f"resumir_{ticket_aberto}"):
+                            with st.spinner("Resumindo..."):
+                                res, err = api("POST", "/mixfoco/sac/ia/resumir", json={"ticket_id": ticket_aberto})
+                            if err:
+                                st.error(f"Erro: {err}")
+                            else:
+                                st.json(res)
+                    with col_ia2:
+                        if st.button("⚠️ Urgência", key=f"urgencia_{ticket_aberto}"):
+                            with st.spinner("Avaliando urgência..."):
+                                urg, err = api("POST", "/mixfoco/sac/ia/urgencia", json={"ticket_id": ticket_aberto})
+                            if err:
+                                st.error(f"Erro: {err}")
+                            else:
+                                st.json(urg)
+
+                col_a1, col_a2, col_a3, col_a4 = st.columns([2, 3, 2, 2])
+                with col_a1:
+                    if st.button("🙋 Assumir ticket", key=f"assumir_{ticket_aberto}"):
+                        _, err = api("POST", f"/mixfoco/sac/tickets/{ticket_aberto}/assumir")
+                        if err:
+                            st.error(f"Erro: {err}")
+                        else:
+                            st.success("Ticket assumido!")
+                            st.rerun()
+                with col_a2:
+                    novo_status = st.selectbox(
+                        "Mudar status",
+                        ["aberto", "em_andamento", "aguardando", "resolvido", "fechado"],
+                        key=f"status_sel_{ticket_aberto}",
+                    )
+                with col_a3:
+                    st.markdown("&nbsp;", unsafe_allow_html=True)
+                    if st.button("✅ Atualizar", key=f"atualizar_status_{ticket_aberto}"):
+                        _, err = api(
+                            "POST", f"/mixfoco/sac/tickets/{ticket_aberto}/status",
+                            json={"status": novo_status},
+                        )
+                        if err:
+                            st.error(f"Erro: {err}")
+                        else:
+                            st.success("Status atualizado!")
+                            st.rerun()
+                with col_a4:
+                    st.markdown("&nbsp;", unsafe_allow_html=True)
+                    if st.button("⬅️ Fechar visão", key=f"fechar_view_{ticket_aberto}"):
+                        st.session_state.pop("sac_ticket_aberto", None)
+                        st.rerun()
+
+    # ── BASE DE CONHECIMENTO ───────────────────────────────────────────
+    with sub_kb:
+        st.markdown("### Base de Conhecimento")
+        st.caption("Respostas padrão e informações que a IA usa para sugerir respostas no SAC.")
+
+        col_k1, col_k2, col_k3 = st.columns([3, 2, 1])
+        with col_k1:
+            kb_busca = st.text_input("Buscar", placeholder="palavra-chave", key="kb_busca")
+        with col_k2:
+            kb_categoria = st.text_input("Categoria", placeholder="ex: devolução, garantia", key="kb_categoria")
+        with col_k3:
+            st.markdown("&nbsp;", unsafe_allow_html=True)
+            kb_recarregar = st.button("🔄", key="kb_recarregar")
+
+        if kb_recarregar or "kb_entries" not in st.session_state:
+            params = []
+            if kb_busca.strip():
+                params.append(f"q={kb_busca.strip()}")
+            if kb_categoria.strip():
+                params.append(f"categoria={kb_categoria.strip()}")
+            qs = "?" + "&".join(params) if params else ""
+            with st.spinner("Buscando base de conhecimento..."):
+                data, err = api("GET", f"/mixfoco/sac/kb{qs}")
+            if err:
+                st.error(f"Erro: {err}")
+            elif data is not None:
+                st.session_state["kb_entries"] = data.get(
+                    "entries", data.get("items", data if isinstance(data, list) else [])
+                )
+
+        entries = st.session_state.get("kb_entries", [])
+        st.markdown(f"**{len(entries)} entrada(s)**")
+
+        for e in entries:
+            eid = e.get("id") or e.get("entry_id")
+            with st.container(border=True):
+                col_e1, col_e2 = st.columns([5, 1])
+                with col_e1:
+                    st.markdown(f"**{e.get('titulo', e.get('pergunta', '—'))}**")
+                    st.caption(f"Categoria: {e.get('categoria', '—')} · Marketplace: {e.get('marketplace', 'todos')}")
+                    st.write(e.get("resposta", e.get("conteudo", "")))
+                with col_e2:
+                    if st.button("✏️ Editar", key=f"editar_kb_{eid}"):
+                        st.session_state["kb_editando"] = eid
+                        st.rerun()
+                    if st.button("🗑️ Remover", key=f"del_kb_{eid}"):
+                        _, err = api("DELETE", f"/mixfoco/sac/kb/{eid}")
+                        if err:
+                            st.error(f"Erro: {err}")
+                        else:
+                            st.session_state.pop("kb_entries", None)
+                            st.rerun()
+
+        st.divider()
+        editando_id = st.session_state.get("kb_editando")
+        entry_edit = None
+        if editando_id:
+            entry_edit = next(
+                (e for e in entries if str(e.get("id") or e.get("entry_id")) == str(editando_id)), None
+            )
+
+        st.markdown("### ✏️ Editar entrada" if entry_edit else "### ➕ Nova entrada")
+        with st.form("form_kb", clear_on_submit=not entry_edit):
+            titulo = st.text_input(
+                "Título/Pergunta",
+                value=entry_edit.get("titulo", entry_edit.get("pergunta", "")) if entry_edit else "",
+            )
+            categoria = st.text_input("Categoria", value=entry_edit.get("categoria", "") if entry_edit else "")
+            marketplace = st.text_input(
+                "Marketplace (vazio = todos)", value=entry_edit.get("marketplace", "") if entry_edit else ""
+            )
+            resposta = st.text_area(
+                "Resposta/Conteúdo",
+                value=entry_edit.get("resposta", entry_edit.get("conteudo", "")) if entry_edit else "",
+                height=120,
+            )
+            ativo = st.toggle("Ativo", value=entry_edit.get("ativo", True) if entry_edit else True)
+
+            col_sub, col_cancel = st.columns([1, 1])
+            with col_sub:
+                submitted_kb = st.form_submit_button("💾 Salvar", type="primary")
+            with col_cancel:
+                cancelar_kb = st.form_submit_button("✖ Cancelar") if entry_edit else False
+
+            if submitted_kb:
+                payload = {
+                    "titulo": titulo,
+                    "categoria": categoria,
+                    "marketplace": marketplace or None,
+                    "resposta": resposta,
+                    "ativo": ativo,
+                }
+                if entry_edit:
+                    result, err = api("PUT", f"/mixfoco/sac/kb/{editando_id}", json=payload)
+                else:
+                    result, err = api("POST", "/mixfoco/sac/kb", json=payload)
+                if err:
+                    st.error(f"Erro: {err}")
+                else:
+                    st.success("✅ Entrada salva!")
+                    st.session_state.pop("kb_entries", None)
+                    st.session_state.pop("kb_editando", None)
+                    st.rerun()
+
+            if cancelar_kb:
+                st.session_state.pop("kb_editando", None)
+                st.rerun()
