@@ -40,6 +40,13 @@ O mesmo importador está na aba SAC → Base de Conhecimento → "Importar base 
 Ao atualizar a base: gere um novo JSON datado em `ml-ia/kb/` (não edite o anterior), só marque
 `pronta` o que tem fonte publicada no anúncio, regenere o `PENDENCIAS.md` e rode o importador.
 
+## Automações do SAC (`sac_automacoes.py`)
+
+Aba SAC → ⚙️ Automações configura o **agradecimento automático no pós-venda** (plano e contrato
+da API em `docs/plano_auto_agradecimento_pos_venda.md`). O classificador
+`classificar_agradecimento` vive em `sac_automacoes.py`, sem IA, e é a referência que o backend
+deve reproduzir. Ao mudar listas de palavras, rode os casos de teste antes de commitar.
+
 ## Convenções
 
 - Idioma do produto e das mensagens ao cliente: português do Brasil.

@@ -1,6 +1,7 @@
 # Plano — resposta automática de agradecimento no pós-venda
 
-Status: **proposta, aguardando aprovação do Sergio**. Nada implementado ainda.
+Status: **aprovado em 03/09/2026**. Dashboard, classificador e entrada da base implementados neste repo;
+backend pendente (ver "Contrato da API" no fim).
 
 ## Situação
 
@@ -116,3 +117,21 @@ misturar agradecimento com cobrança de nota e evitar atrito com as políticas d
 2. Janela de dias após o pós-venda (proposta: 15).
 3. Encerrar o ticket automaticamente ou só marcar como lido?
 4. Confirmar que a regra roda no backend, e não na Auto Resposta do UpSeller.
+
+## Contrato da API (o que o backend precisa expor)
+
+Implementado no dashboard (`dashboard.py`, aba SAC → ⚙️ Automações) e em `sac_automacoes.py`.
+
+| Rota | Método | Corpo / resposta |
+|---|---|---|
+| `/mixfoco/sac/automacoes/agradecimento` | GET, PUT | `{"ativo": bool, "dry_run": bool, "janela_dias": int, "template": str, "palavras_bloqueio": [str], "loja": str}` |
+| `/mixfoco/sac/automacoes/agradecimento/log?de=&ate=` | GET | `{"eventos": [{"data", "pedido", "loja", "comprador", "texto_recebido", "classe", "motivo", "respondido", "dry_run", "resposta"}]}` |
+| `/mixfoco/sac/dashboard` | GET | campo opcional `agradecimentos_automaticos` (int) para o card do painel |
+
+O classificador de referência é `sac_automacoes.classificar_agradecimento(texto, palavras_bloqueio_extra)`:
+devolve `agradecimento` (responde), `ambiguo` (a IA decide via `/mixfoco/sac/ia/classificar`; só
+responde se a classe for `agradecimento`) ou `outro` (nunca responde). O backend deve importar o
+módulo ou reproduzir as listas `PALAVRAS_POSITIVAS`, `PALAVRAS_BLOQUEIO` e `PALAVRAS_NEUTRAS`.
+
+O template fica também na base de conhecimento como `[auto] Agradecimento pós-venda`
+(`ml-ia/kb/gabriela_kb_automacoes_2026-09-03.json`), importável com `kb_import.py`.

@@ -1,0 +1,20 @@
+{
+ "gerado_em": "2026-09-03",
+ "base": "Gabriela — Templates de automação do SAC (ml-ia/kb)",
+ "convencao_conteudo": "P: <pergunta canônica>\\nR: <resposta>",
+ "entradas": [
+  {
+   "item_id": null,
+   "titulo_produto": null,
+   "status": "pronta",
+   "tags": [
+    "curado",
+    "pos-venda"
+   ],
+   "fonte": "Plano aprovado pelo Sergio em 03/09/2026 (docs/plano_auto_agradecimento_pos_venda.md)",
+   "conteudo": "P: [auto] Agradecimento pós-venda\nR: De nada, {primeiro_nome}! 💜 Fico feliz em ajudar.\nAssim que o pedido chegar, se precisar de qualquer coisa é só me chamar por aqui.\nBoas compras! — Gabriela · Equipe {loja}"
+  }
+ ],
+ "pendencias": [],
+ "correcoes_de_anuncio": []
+}
