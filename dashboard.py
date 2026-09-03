@@ -3,9 +3,13 @@ Mixfoco Dashboard — Streamlit
 Candidatos · Ativos · Impacto · Regras · Lojas
 """
 import os
+import json
 import requests
 import streamlit as st
 from datetime import datetime
+
+import kb_import
+import sac_automacoes
 
 API_URL = os.getenv("MIXFOCO_API_URL", "https://railway-up-production-1df7.up.railway.app")
 
@@ -666,7 +670,9 @@ with aba_sac:
 
     st.subheader("SAC — Atendimento ao Cliente")
 
-    sub_painel, sub_tickets, sub_kb = st.tabs(["📊 Painel", "🎫 Tickets", "📚 Base de Conhecimento"])
+    sub_painel, sub_tickets, sub_kb, sub_auto = st.tabs(
+        ["📊 Painel", "🎫 Tickets", "📚 Base de Conhecimento", "⚙️ Automações"]
+    )
 
     # ── PAINEL ───────────────────────────────────────────────────────
     with sub_painel:
@@ -697,6 +703,8 @@ with aba_sac:
             k4.metric("SLA", f"{sla_v}%" if sla_v is not None else "—")
             k5.metric("Satisfação", dash.get("satisfacao", dash.get("csat", "—")))
             k6.metric("Abertos", dash.get("abertos", dash.get("open", "—")))
+            if dash.get("agradecimentos_automaticos") is not None:
+                st.metric("💜 Agradecimentos automáticos (pós-venda)", dash["agradecimentos_automaticos"])
 
             ranking = dash.get("ranking") or dash.get("ranking_operadores")
             if ranking:
@@ -931,6 +939,80 @@ with aba_sac:
                             st.rerun()
 
         st.divider()
+
+        # ── IMPORTAR BASE (JSON de ml-ia/kb) ──────────────────────────────
+        with st.expander("📥 Importar base da Gabriela (JSON de ml-ia/kb)"):
+            st.caption(
+                "Arquivo no formato de `ml-ia/kb/gabriela_kb_*.json`. Só entradas com status "
+                "`pronta` são gravadas; a importação é idempotente (atualiza pelo título)."
+            )
+            kb_arquivo = st.file_uploader("JSON da base", type=["json"], key="kb_import_arquivo")
+            col_i1, col_i2 = st.columns([2, 1])
+            with col_i1:
+                kb_imp_marketplace = st.text_input(
+                    "Marketplace (vazio = todos)", value="", key="kb_import_marketplace"
+                )
+            with col_i2:
+                kb_imp_dry = st.checkbox("Dry run", value=True, key="kb_import_dry")
+            if kb_arquivo is not None:
+                try:
+                    kb_base = json.loads(kb_arquivo.getvalue().decode("utf-8"))
+                    kb_payloads, kb_pulados = kb_import.build_payloads(
+                        kb_base, kb_imp_marketplace.strip() or None
+                    )
+                except Exception as e:  # noqa: BLE001
+                    st.error(f"JSON inválido: {e}")
+                    kb_payloads, kb_pulados = [], []
+                if kb_payloads or kb_pulados:
+                    st.markdown(
+                        f"**{len(kb_payloads)}** entrada(s) prontas · "
+                        f"**{len(kb_pulados)}** pulada(s) · "
+                        f"{len(kb_base.get('pendencias') or [])} pendência(s) · "
+                        f"{len(kb_base.get('correcoes_de_anuncio') or [])} correção(ões) de anúncio"
+                    )
+                    with st.expander("Prévia das entradas"):
+                        st.dataframe(
+                            pd.DataFrame(
+                                [{"item_id": p["item_id"], "categoria": p["categoria"],
+                                  "pergunta": p["pergunta"], "resposta": p["resposta"]}
+                                 for p in kb_payloads]
+                            ),
+                            use_container_width=True, hide_index=True,
+                        )
+                    if st.button(
+                        "🔍 Simular importação" if kb_imp_dry else "📥 Importar na base",
+                        key="kb_import_btn", type="primary",
+                    ):
+                        with st.spinner("Importando..."):
+                            kb_resumo = kb_import.upsert_entries(api, kb_payloads, dry_run=kb_imp_dry)
+                        prefixo = "[DRY RUN] " if kb_imp_dry else ""
+                        st.info(
+                            f"{prefixo}Criadas: {len(kb_resumo['criadas'])} · "
+                            f"Atualizadas: {len(kb_resumo['atualizadas'])} · "
+                            f"Sem alteração: {len(kb_resumo['iguais'])} · "
+                            f"Erros: {len(kb_resumo['erros'])}"
+                        )
+                        for erro in kb_resumo["erros"]:
+                            st.error(f"{erro['titulo']}: {erro['erro']}")
+                        if not kb_imp_dry and not kb_resumo["erros"]:
+                            st.success("✅ Base da Gabriela atualizada!")
+                            st.session_state.pop("kb_entries", None)
+                    if kb_base.get("pendencias"):
+                        with st.expander(f"Pendências para o Sergio ({len(kb_base['pendencias'])})"):
+                            st.dataframe(
+                                pd.DataFrame(kb_base["pendencias"]).assign(
+                                    itens=lambda d: d["itens"].apply(", ".join)
+                                ),
+                                use_container_width=True, hide_index=True,
+                            )
+                    if kb_base.get("correcoes_de_anuncio"):
+                        with st.expander(f"Correções de anúncio ({len(kb_base['correcoes_de_anuncio'])})"):
+                            st.dataframe(
+                                pd.DataFrame(kb_base["correcoes_de_anuncio"]),
+                                use_container_width=True, hide_index=True,
+                            )
+
+        st.divider()
         editando_id = st.session_state.get("kb_editando")
         entry_edit = None
         if editando_id:
@@ -984,3 +1066,130 @@ with aba_sac:
             if cancelar_kb:
                 st.session_state.pop("kb_editando", None)
                 st.rerun()
+
+    # ── AUTOMAÇÕES ─────────────────────────────────────────────────────
+    with sub_auto:
+        st.markdown("### Agradecimento automático no pós-venda")
+        st.caption(
+            "Quando o comprador responde à mensagem de pós-venda da Gabriela só com um agradecimento, "
+            "o backend responde com o template abaixo e encerra a conversa. Uma resposta por pedido; "
+            "dúvidas, problemas e reclamações nunca são respondidos automaticamente."
+        )
+
+        if "auto_agr_cfg" not in st.session_state:
+            cfg_api, err = api("GET", sac_automacoes.ROTA_CONFIG)
+            if err:
+                st.session_state["auto_agr_cfg_err"] = err
+                cfg_api = None
+            st.session_state["auto_agr_cfg"] = sac_automacoes.config_com_padrao(cfg_api)
+        cfg = st.session_state["auto_agr_cfg"]
+        if st.session_state.get("auto_agr_cfg_err"):
+            st.warning(
+                "Não foi possível carregar a configuração da API (a rota "
+                f"`{sac_automacoes.ROTA_CONFIG}` pode não existir ainda). Mostrando os padrões. "
+                f"Erro: {st.session_state['auto_agr_cfg_err']}"
+            )
+
+        col_a1, col_a2, col_a3, col_a4 = st.columns([1, 1, 1, 2])
+        with col_a1:
+            auto_ativo = st.toggle("Ativa", value=bool(cfg["ativo"]), key="auto_agr_ativo")
+        with col_a2:
+            auto_dry = st.toggle(
+                "Dry run (só registra)", value=bool(cfg["dry_run"]), key="auto_agr_dry",
+                help="Com dry run ligado o backend registra o que responderia, sem enviar.",
+            )
+        with col_a3:
+            auto_janela = st.number_input(
+                "Janela (dias após o pós-venda)", min_value=1, max_value=90,
+                value=int(cfg["janela_dias"]), key="auto_agr_janela",
+            )
+        with col_a4:
+            auto_loja = st.text_input("Assinatura da loja", value=cfg.get("loja", ""), key="auto_agr_loja")
+
+        if auto_ativo and not auto_dry:
+            st.warning("⚠️ Envio real ligado: as respostas serão enviadas aos compradores.")
+
+        col_t1, col_t2 = st.columns([3, 2])
+        with col_t1:
+            auto_template = st.text_area(
+                "Template da resposta", value=cfg["template"], height=140, key="auto_agr_template",
+                help="Variáveis: {primeiro_nome} e {loja}.",
+            )
+            auto_bloqueio = st.text_area(
+                "Palavras de bloqueio extras (uma por linha)",
+                value="\n".join(cfg["palavras_bloqueio"]), height=90, key="auto_agr_bloqueio",
+                help="Além da lista padrão (não chegou, quebrou, defeito, troca, devolução, garantia...).",
+            )
+        with col_t2:
+            st.markdown("**Prévia**")
+            with st.container(border=True):
+                st.write(sac_automacoes.renderizar_template(auto_template, "Eliana Valeria de Resende", auto_loja))
+            st.markdown("**Testar classificação**")
+            auto_teste = st.text_input(
+                "Mensagem do comprador", placeholder="ex: Obg Gabriela.", key="auto_agr_teste"
+            )
+            if auto_teste.strip():
+                extras = [l.strip() for l in auto_bloqueio.splitlines() if l.strip()]
+                res = sac_automacoes.classificar_agradecimento(auto_teste, extras)
+                if res["classe"] == "agradecimento":
+                    st.success(
+                        f"✅ Texto passa — {res['motivo']}. O backend ainda confere: última fala "
+                        "é do cliente, aviso de envio na conversa, janela, uma resposta por pedido "
+                        "e pedido não entregue."
+                    )
+                else:
+                    st.error(f"⛔ Não responde (vai para humano) — {res['motivo']}")
+
+        if st.button("💾 Salvar configuração", type="primary", key="auto_agr_salvar"):
+            payload = {
+                "ativo": auto_ativo,
+                "dry_run": auto_dry,
+                "janela_dias": int(auto_janela),
+                "template": auto_template,
+                "palavras_bloqueio": [l.strip() for l in auto_bloqueio.splitlines() if l.strip()],
+                "loja": auto_loja.strip(),
+            }
+            _, err = api("PUT", sac_automacoes.ROTA_CONFIG, json=payload)
+            if err:
+                st.error(f"Erro ao salvar: {err}")
+            else:
+                st.session_state["auto_agr_cfg"] = sac_automacoes.config_com_padrao(payload)
+                st.success("✅ Configuração salva!")
+
+        st.divider()
+        st.markdown("### Histórico de respostas automáticas")
+        col_l1, col_l2, col_l3 = st.columns([2, 2, 1])
+        with col_l1:
+            auto_de = st.date_input("De", value=_date.today().replace(day=1), key="auto_agr_de")
+        with col_l2:
+            auto_ate = st.date_input("Até", value=_date.today(), key="auto_agr_ate")
+        with col_l3:
+            st.markdown("&nbsp;", unsafe_allow_html=True)
+            auto_carregar = st.button("🔄 Carregar", key="auto_agr_carregar")
+
+        if auto_carregar:
+            with st.spinner("Buscando histórico..."):
+                log_data, err = api("GET", f"{sac_automacoes.ROTA_LOG}?de={auto_de}&ate={auto_ate}")
+            if err:
+                st.error(f"Erro: {err}")
+            else:
+                st.session_state["auto_agr_log"] = kb_import.extract_entries(
+                    log_data.get("eventos", log_data) if isinstance(log_data, dict) else log_data
+                )
+
+        eventos = st.session_state.get("auto_agr_log")
+        if eventos is None:
+            st.info("Clique em Carregar para ver o histórico do período.")
+        elif not eventos:
+            st.info("Nenhum evento no período.")
+        else:
+            df_log = pd.DataFrame(eventos)
+            respondidos = int(df_log["respondido"].fillna(False).astype(bool).sum()) if "respondido" in df_log else 0
+            simulados = int(df_log["dry_run"].fillna(False).astype(bool).sum()) if "dry_run" in df_log else 0
+            m1, m2, m3 = st.columns(3)
+            m1.metric("Eventos", len(df_log))
+            m2.metric("Respondidos", respondidos)
+            m3.metric("Simulados (dry run)", simulados)
+            colunas = [c for c in ["data", "loja", "pedido", "comprador", "texto_recebido", "classe",
+                                   "motivo", "respondido", "dry_run", "resposta"] if c in df_log.columns]
+            st.dataframe(df_log[colunas] if colunas else df_log, use_container_width=True, hide_index=True)
