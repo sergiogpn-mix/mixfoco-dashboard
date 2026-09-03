@@ -3,9 +3,12 @@ Mixfoco Dashboard — Streamlit
 Candidatos · Ativos · Impacto · Regras · Lojas
 """
 import os
+import json
 import requests
 import streamlit as st
 from datetime import datetime
+
+import kb_import
 
 API_URL = os.getenv("MIXFOCO_API_URL", "https://railway-up-production-1df7.up.railway.app")
 
@@ -929,6 +932,80 @@ with aba_sac:
                         else:
                             st.session_state.pop("kb_entries", None)
                             st.rerun()
+
+        st.divider()
+
+        # ── IMPORTAR BASE (JSON de ml-ia/kb) ──────────────────────────────
+        with st.expander("📥 Importar base da Gabriela (JSON de ml-ia/kb)"):
+            st.caption(
+                "Arquivo no formato de `ml-ia/kb/gabriela_kb_*.json`. Só entradas com status "
+                "`pronta` são gravadas; a importação é idempotente (atualiza pelo título)."
+            )
+            kb_arquivo = st.file_uploader("JSON da base", type=["json"], key="kb_import_arquivo")
+            col_i1, col_i2 = st.columns([2, 1])
+            with col_i1:
+                kb_imp_marketplace = st.text_input(
+                    "Marketplace (vazio = todos)", value="", key="kb_import_marketplace"
+                )
+            with col_i2:
+                kb_imp_dry = st.checkbox("Dry run", value=True, key="kb_import_dry")
+            if kb_arquivo is not None:
+                try:
+                    kb_base = json.loads(kb_arquivo.getvalue().decode("utf-8"))
+                    kb_payloads, kb_pulados = kb_import.build_payloads(
+                        kb_base, kb_imp_marketplace.strip() or None
+                    )
+                except Exception as e:  # noqa: BLE001
+                    st.error(f"JSON inválido: {e}")
+                    kb_payloads, kb_pulados = [], []
+                if kb_payloads or kb_pulados:
+                    st.markdown(
+                        f"**{len(kb_payloads)}** entrada(s) prontas · "
+                        f"**{len(kb_pulados)}** pulada(s) · "
+                        f"{len(kb_base.get('pendencias') or [])} pendência(s) · "
+                        f"{len(kb_base.get('correcoes_de_anuncio') or [])} correção(ões) de anúncio"
+                    )
+                    with st.expander("Prévia das entradas"):
+                        st.dataframe(
+                            pd.DataFrame(
+                                [{"item_id": p["item_id"], "categoria": p["categoria"],
+                                  "pergunta": p["pergunta"], "resposta": p["resposta"]}
+                                 for p in kb_payloads]
+                            ),
+                            use_container_width=True, hide_index=True,
+                        )
+                    if st.button(
+                        "🔍 Simular importação" if kb_imp_dry else "📥 Importar na base",
+                        key="kb_import_btn", type="primary",
+                    ):
+                        with st.spinner("Importando..."):
+                            kb_resumo = kb_import.upsert_entries(api, kb_payloads, dry_run=kb_imp_dry)
+                        prefixo = "[DRY RUN] " if kb_imp_dry else ""
+                        st.info(
+                            f"{prefixo}Criadas: {len(kb_resumo['criadas'])} · "
+                            f"Atualizadas: {len(kb_resumo['atualizadas'])} · "
+                            f"Sem alteração: {len(kb_resumo['iguais'])} · "
+                            f"Erros: {len(kb_resumo['erros'])}"
+                        )
+                        for erro in kb_resumo["erros"]:
+                            st.error(f"{erro['titulo']}: {erro['erro']}")
+                        if not kb_imp_dry and not kb_resumo["erros"]:
+                            st.success("✅ Base da Gabriela atualizada!")
+                            st.session_state.pop("kb_entries", None)
+                    if kb_base.get("pendencias"):
+                        with st.expander(f"Pendências para o Sergio ({len(kb_base['pendencias'])})"):
+                            st.dataframe(
+                                pd.DataFrame(kb_base["pendencias"]).assign(
+                                    itens=lambda d: d["itens"].apply(", ".join)
+                                ),
+                                use_container_width=True, hide_index=True,
+                            )
+                    if kb_base.get("correcoes_de_anuncio"):
+                        with st.expander(f"Correções de anúncio ({len(kb_base['correcoes_de_anuncio'])})"):
+                            st.dataframe(
+                                pd.DataFrame(kb_base["correcoes_de_anuncio"]),
+                                use_container_width=True, hide_index=True,
+                            )
 
         st.divider()
         editando_id = st.session_state.get("kb_editando")

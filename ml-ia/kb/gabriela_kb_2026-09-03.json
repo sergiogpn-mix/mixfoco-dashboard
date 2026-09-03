@@ -1,0 +1,389 @@
+{
+ "gerado_em": "2026-09-03",
+ "base": "Gabriela — Base de Conhecimento por Produto (ml-ia/kb)",
+ "convencao_conteudo": "P: <pergunta canônica>\\nR: <resposta>",
+ "status_legenda": {
+  "pronta": "Fato conferido na ficha técnica/descrição do anúncio no ML — pode gravar",
+  "falta_dado": "Pergunta recorrente sem fonte publicada — precisa do dado do Sergio",
+  "politica": "Depende de uma política comercial a definir"
+ },
+ "entradas": [
+  {
+   "item_id": "MLB6111470134",
+   "titulo_produto": "Powerbank Carregador Portátil 5000mah Carregamento Magnético",
+   "status": "pronta",
+   "tags": [
+    "curado",
+    "compatibilidade"
+   ],
+   "fonte": "Ficha ML: Tipo de carregador = Carregamento Magnético; Marcas compatíveis = iPhone, Samsung + resposta da equipe 31/08/2026",
+   "conteudo": "P: Funciona com capinha? Preciso de capinha com anel magnético?\nR: Olá! Ele é um carregador magnético por indução, então precisa de um ponto magnético para fixar. Em iPhone com MagSafe a fixação é direta. Nos demais aparelhos (inclusive Samsung) é necessário usar uma capinha com anel magnético — sem o anel ele não fixa e não inicia a carga. Se você já tem uma capinha com anel, funciona normalmente."
+  },
+  {
+   "item_id": "MLB6111470134",
+   "titulo_produto": "Powerbank Carregador Portátil 5000mah Carregamento Magnético",
+   "status": "pronta",
+   "tags": [
+    "curado",
+    "uso"
+   ],
+   "fonte": "Resposta da equipe no painel (30/08/2026)",
+   "conteudo": "P: Encostei no celular e não carrega, o que faço?\nR: Olá! Para ativar, pressione o botão power duas vezes seguidas e encoste o powerbank na parte de trás do celular — a carga começa em seguida. Confirme também que a capinha tem o anel magnético (ou que o aparelho é MagSafe), porque é o ímã que alinha a bobina de indução."
+  },
+  {
+   "item_id": "MLB6111470134",
+   "titulo_produto": "Powerbank Carregador Portátil 5000mah Carregamento Magnético",
+   "status": "pronta",
+   "tags": [
+    "curado",
+    "especificacao"
+   ],
+   "fonte": "Ficha ML: 5 Ah, Turbo 22.5W, saída 5V, USB-C + indução, cabo 15 cm, 1 porta, proteção contra sobrecarga, Anatel 002022617992",
+   "conteudo": "P: Qual a capacidade, a potência e o que vem junto? É homologado?\nR: Olá! São 5000 mAh (5 Ah) de bateria de íon de lítio, carga turbo de 22,5 W e saída de 5 V. Tem 1 porta de carga, conexão USB-C e indução magnética, proteção contra sobrecarga e acompanha cabo de 15 cm. É produto DGX homologado pela Anatel sob o nº 002022617992."
+  },
+  {
+   "item_id": "MLB4893593273",
+   "titulo_produto": "Maquina Para Cortar Pelicula Hidrogel Tpu Dgx Desbloqueada",
+   "status": "pronta",
+   "tags": [
+    "curado",
+    "compatibilidade"
+   ],
+   "fonte": "Ficha ML: Largura máxima de corte = 43,18 cm; Largura máxima de alimentação = 30 cm",
+   "conteudo": "P: Ela corta película de tablet/notebook de 13 ou 17 polegadas?\nR: Olá! A largura máxima de corte é de 43,18 cm, o equivalente a 17 polegadas na diagonal, e a alimentação da folha aceita até 30 cm de largura. Então ela atende tanto 13\" quanto 17\", desde que a folha de hidrogel caiba nessa largura de alimentação."
+  },
+  {
+   "item_id": "MLB4893593273",
+   "titulo_produto": "Maquina Para Cortar Pelicula Hidrogel Tpu Dgx Desbloqueada",
+   "status": "pronta",
+   "tags": [
+    "curado",
+    "conteudo-da-caixa"
+   ],
+   "fonte": "Ficha ML: Acessórios incluídos = Cabo, Lâmina; Inclui base = Não",
+   "conteudo": "P: O que vem na caixa? Acompanha espátula ou kit de películas?\nR: Olá! Acompanham a máquina o cabo de alimentação e a lâmina de corte. Não acompanha espátula de aplicação nem kit de películas — esses itens são vendidos à parte."
+  },
+  {
+   "item_id": "MLB4893593273",
+   "titulo_produto": "Maquina Para Cortar Pelicula Hidrogel Tpu Dgx Desbloqueada",
+   "status": "pronta",
+   "tags": [
+    "curado",
+    "funcionamento"
+   ],
+   "fonte": "Descrição do anúncio: sistema desbloqueado, sem mensalidade/assinatura/licença, acervo de +30 mil modelos",
+   "conteudo": "P: Ela é desbloqueada? Tem mensalidade?\nR: Olá! Sim, o sistema é totalmente desbloqueado: não há mensalidade, assinatura ou licença de uso. O acervo tem mais de 30 mil modelos de corte com atualizações contínuas. Ela é 127/220V, tem tela, conexão USB e precisão de lâmina de 1 mm."
+  },
+  {
+   "item_id": "MLB5937516136",
+   "titulo_produto": "Garrafa Térmica Inox 1l Squeeze Academia 12h Frio/quente",
+   "status": "pronta",
+   "tags": [
+    "curado",
+    "especificacao"
+   ],
+   "fonte": "Ficha ML: 1 L, aço inox, 12h frio e 12h quente, livre de BPA, com infusor, com alça e tampa, 30 cm × Ø 7 cm, 440 g",
+   "conteudo": "P: Qual a capacidade, as medidas e quanto tempo conserva a temperatura?\nR: Olá! São 1 litro em aço inoxidável, 30 cm de altura por 7 cm de diâmetro e 440 g. Conserva bebida gelada e quente por até 12 horas, é livre de BPA e acompanha infusor de chá, alça e tampa de rosca."
+  },
+  {
+   "item_id": "MLB5937516136",
+   "titulo_produto": "Garrafa Térmica Inox 1l Squeeze Academia 12h Frio/quente",
+   "status": "pronta",
+   "tags": [
+    "curado",
+    "compatibilidade"
+   ],
+   "fonte": "Ficha ML: Diâmetro = 7 cm; Altura = 30 cm",
+   "conteudo": "P: Cabe no suporte de garrafa da bicicleta?\nR: Olá! A garrafa tem 7 cm de diâmetro e 30 cm de altura. A maioria dos suportes de bike padrão aceita garrafas de até cerca de 7,4 cm, então costuma encaixar — vale conferir a abertura do seu suporte antes, principalmente por causa da altura de 30 cm."
+  },
+  {
+   "item_id": "MLB4308562565",
+   "titulo_produto": "Garrafa Térmica Copo Inox 900ml Alça Tampa T Flip Canudo",
+   "status": "pronta",
+   "tags": [
+    "curado",
+    "especificacao"
+   ],
+   "fonte": "Ficha ML: 900 mL, aço inox, 12h frio / 8h quente, Ø 7 cm, altura 25 cm, com alça e tampa flip + canudo",
+   "conteudo": "P: Qual a capacidade, as medidas e a retenção térmica?\nR: Olá! São 900 ml em aço inoxidável de parede dupla, 25 cm de altura por 7 cm de diâmetro. Mantém a bebida gelada por até 12 horas e quente por até 8 horas. Acompanha tampa flip, canudo e alça para transporte."
+  },
+  {
+   "item_id": "MLB6304509992",
+   "titulo_produto": "Placa Autoadesiva Marmorizada Dgx 60x60cm Vinil Premium",
+   "status": "pronta",
+   "tags": [
+    "curado",
+    "calculo",
+    "alto-valor"
+   ],
+   "fonte": "Ficha ML: 60 × 60 cm, unidade de venda em kit de 10",
+   "conteudo": "P: Quantas placas eu preciso para a minha parede? Como faço o cálculo?\nR: Olá! Cada placa mede 60 × 60 cm, ou seja, cobre 0,36 m². O kit de 10 placas cobre 3,6 m².\nO cálculo é simples: multiplique a largura pela altura da parede em metros e divida por 0,36.\nExemplo: uma parede de 2,90 m × 4,00 m = 11,6 m² → 11,6 ÷ 0,36 = 32,2, ou seja, 33 placas.\nRecomendamos somar cerca de 10% para recortes e perdas — nesse exemplo, 36 placas (4 kits)."
+  },
+  {
+   "item_id": "MLB6304509992",
+   "titulo_produto": "Placa Autoadesiva Marmorizada Dgx 60x60cm Vinil Premium",
+   "status": "pronta",
+   "tags": [
+    "curado",
+    "aplicacao"
+   ],
+   "fonte": "Descrição do anúncio: aplicar em superfícies lisas, limpas e secas",
+   "conteudo": "P: Posso colar em parede só rebocada? Precisa de rejunte?\nR: Olá! A placa é autoadesiva e deve ser aplicada em superfície lisa, limpa e seca — parede pintada, azulejo, móvel, MDF. Reboco cru é poroso e irregular, então a aderência fica comprometida; nesse caso é preciso massa corrida e pintura antes. Não usa rejunte nem argamassa: a colagem é direta, placa ao lado da outra."
+  },
+  {
+   "item_id": "MLB6304509992",
+   "titulo_produto": "Placa Autoadesiva Marmorizada Dgx 60x60cm Vinil Premium",
+   "status": "pronta",
+   "tags": [
+    "curado",
+    "aplicacao"
+   ],
+   "fonte": "Ficha ML: Usos recomendados = interiores residenciais e comerciais; É resistente ao calor = Não",
+   "conteudo": "P: Pode ser usada no piso ou em piso laminado?\nR: Olá! Não. A placa é indicada para paredes, móveis e superfícies verticais em ambientes internos. Ela não é resistente ao calor nem foi feita para tráfego de pessoas, então não recomendamos a aplicação em piso."
+  },
+  {
+   "item_id": "MLB7015633274",
+   "titulo_produto": "Display Expositor De Metal Produtos Encartelados 60 Ganchos",
+   "status": "pronta",
+   "tags": [
+    "curado",
+    "especificacao"
+   ],
+   "fonte": "Ficha ML + descrição: 1,70 m × 60 cm, 60 ganchos metálicos, rodízios com trava, pintura preta",
+   "conteudo": "P: Quais as medidas do expositor e o que acompanha?\nR: Olá! O expositor tem 1,70 m de altura por 60 cm de largura, é todo em metal com pintura preta e acompanha 60 ganchos metálicos para produtos encartelados, além de rodízios com trava para movimentar e travar no lugar."
+  },
+  {
+   "item_id": "MLB4646299465",
+   "titulo_produto": "Chaleira Eletrica Aço Inox 1.8l Prateado Dgx 220 1500w",
+   "status": "pronta",
+   "tags": [
+    "curado",
+    "especificacao"
+   ],
+   "fonte": "Ficha ML: 1,8 L, 1500 W, desligamento automático, base rotativa, filtro, infusor, indicador de água; descrição: selecionar a voltagem na compra",
+   "conteudo": "P: Qual a potência, a capacidade e a voltagem?\nR: Olá! São 1,8 litros em aço inoxidável e 1500 W de potência, com desligamento automático, base giratória, filtro, infusor e indicador de nível de água. Atenção na hora da compra: é preciso selecionar a voltagem correta (127 V ou 220 V), pois não é bivolt."
+  },
+  {
+   "item_id": "MLB4646299465",
+   "titulo_produto": "Chaleira Eletrica Aço Inox 1.8l Prateado Dgx 220 1500w",
+   "status": "pronta",
+   "tags": [
+    "curado",
+    "uso"
+   ],
+   "fonte": "Ficha ML: Com controle de temperatura = Não; 1 nível de temperatura",
+   "conteudo": "P: Pode esquentar leite?\nR: Olá! Não recomendamos. A chaleira aquece até a fervura e não tem controle de temperatura, então o leite tende a grudar na resistência, queimar e transbordar — além de dificultar muito a limpeza. Ela é indicada para água, para chás, cafés e preparos que usam água quente."
+  },
+  {
+   "item_id": "MLB4412879467",
+   "titulo_produto": "Adaptador Hub Usb C 8 Em 1 Tipo C Para Hdmi Usb 3.0 4k Nat",
+   "status": "pronta",
+   "tags": [
+    "curado",
+    "especificacao"
+   ],
+   "fonte": "Ficha ML: Versões USB compatíveis = 3.0 e C; 8 portas; compatível com Windows, iOS e macOS; cabo 10 cm; modelo BM-8645",
+   "conteudo": "P: Qual a versão do USB? É USB 3.2 Gen 2?\nR: Olá! O hub BM-8645 trabalha no padrão USB 3.0 (não é USB 3.2 Gen 2). São 8 portas no total, com saída HDMI 4K, conexão upstream USB-C, cabo de 10 cm e luz indicadora de funcionamento. É compatível com Windows, macOS e iOS, sem necessidade de driver."
+  },
+  {
+   "item_id": "MLB4480491787",
+   "titulo_produto": "Cabo De Força Energia Tripolar 1,5m Para Fonte Monitor Pc",
+   "status": "pronta",
+   "tags": [
+    "curado",
+    "compatibilidade"
+   ],
+   "fonte": "Ficha ML: tripolar, 3 pinos, 1,5 m, 127/220V; descrição: padrão NBR 14136",
+   "conteudo": "P: Esse cabo serve para PC/monitor?\nR: Olá! Serve sim. É um cabo de força tripolar de 1,5 m no padrão brasileiro NBR 14136, o mesmo usado em fontes de computador, monitores, TVs, projetores e fontes de notebook. Funciona em 127 V ou 220 V."
+  },
+  {
+   "item_id": "MLB4434666951",
+   "titulo_produto": "Cabeça Adaptador Parafusadeira Multifunção Serra Tico-tico",
+   "status": "pronta",
+   "tags": [
+    "curado",
+    "compatibilidade"
+   ],
+   "fonte": "Ficha ML: Tipo de haste = Hexagonal; Comprimento 17 cm; descrição: vem apenas a cabeça, não a máquina",
+   "conteudo": "P: Encaixa na minha parafusadeira? Vem a máquina junto?\nR: Olá! Vem apenas a cabeça adaptadora de serra tico-tico — a parafusadeira não está incluída. Ela tem haste hexagonal e 17 cm de comprimento, e encaixa em parafusadeiras e furadeiras que aceitem haste hexagonal (mandril universal ou encaixe rápido)."
+  },
+  {
+   "item_id": "MLB6404883104",
+   "titulo_produto": "Teclado Usb Com Fio B-max Bm-t02 Abnt2 Silencioso Ergonômico",
+   "status": "pronta",
+   "tags": [
+    "curado",
+    "especificacao"
+   ],
+   "fonte": "Ficha ML: membrana, cabo fixo 1,5 m, 45,5 × 16,2 × 2,5 cm, 350 g, teclado numérico, resistente a salpicos, compatível PS4/Xbox",
+   "conteudo": "P: Funciona no Windows 11? Precisa instalar driver?\nR: Olá! Sim, funciona em Windows 11 — é plug and play por USB, sem instalação de driver. É um teclado de membrana silencioso, com teclado numérico, resistente a salpicos, cabo fixo de 1,5 m e medidas de 45,5 × 16,2 × 2,5 cm (350 g). Também é compatível com PS4, Xbox One e Xbox 360."
+  },
+  {
+   "item_id": "MLB6888908160",
+   "titulo_produto": "Máquina De Gravação A Laser Metais Cnc Fiber Fibra 30w",
+   "status": "pronta",
+   "tags": [
+    "curado",
+    "especificacao"
+   ],
+   "fonte": "Ficha ML: 30 W, área de trabalho 11 × 11 cm, refrigeração por cooler, acessórios = chave, manual, pen-drive e óculos; compatível com Windows",
+   "conteudo": "P: Qual a potência, a área de gravação e o que acompanha?\nR: Olá! É uma laser fiber de 30 W com área de trabalho de 110 × 110 mm, refrigeração por cooler e operação por computador com Windows. Grava em metais em geral, aço, ouro, prata e também MDF. Acompanha chave, manual, pen-drive com o software e óculos de proteção."
+  }
+ ],
+ "pendencias": [
+  {
+   "prio": "P0",
+   "tema": "Continuidade do desenho entre placas de mármore",
+   "itens": [
+    "MLB6304509992",
+    "MLB4493085205",
+    "MLB4748679959",
+    "MLB6304509924",
+    "MLB4645641027",
+    "+9 anúncios irmãos"
+   ],
+   "pergunta": "Os veios da estampa dão continuidade de uma placa para a outra, ou cada placa é uma estampa fechada?",
+   "porque": "É a pergunta que gerou 13 entradas evasivas na base — a mais replicada de todas. Hoje a Gabriela responde 'verifique no anúncio'."
+  },
+  {
+   "prio": "P0",
+   "tema": "Política de garantia",
+   "itens": [
+    "todos"
+   ],
+   "pergunta": "Qual a garantia padrão (prazo, quem cobre, como o cliente aciona)? Há prazo diferente por categoria — eletrônico, máquina, utilidade?",
+   "porque": "Garantia aparece em 10 perguntas de agosto e é a origem da resposta evasiva mais copiada da base."
+  },
+  {
+   "prio": "P0",
+   "tema": "Ficha da laser fiber 30W",
+   "itens": [
+    "MLB6888908160"
+   ],
+   "pergunta": "Fonte do laser (Raycus, JPT, MAX ou outra) e modelo exato; placa controladora; aceita LightBurn?; lente que acompanha (em mm).",
+   "porque": "Comprador técnico perguntou item a item em agosto. Nada disso está na ficha nem na descrição — é venda de ticket alto perdida por falta de dado."
+  },
+  {
+   "prio": "P1",
+   "tema": "Personalização e gravação de nome",
+   "itens": [
+    "MLB5937516136",
+    "MLB4308562565",
+    "MLB5940252962",
+    "MLB4475232859",
+    "MLB4998350485",
+    "MLB7015633274"
+   ],
+   "pergunta": "Vocês fazem gravação/personalização? Se sim: preço, prazo, quantidade mínima e área de gravação. Se não: resposta padrão.",
+   "porque": "4 perguntas em agosto só nas garrafas, mais expositor 'já entregam com a marca?'. Vocês têm a máquina de gravação — dá para virar receita."
+  },
+  {
+   "prio": "P1",
+   "tema": "Garrafas: sublimação e lava-louças",
+   "itens": [
+    "MLB4308562565",
+    "MLB5940252962"
+   ],
+   "pergunta": "O copo tem revestimento de poliéster próprio para sublimação? Pode ir na lava-louças?",
+   "porque": "Cliente sublimador é comprador recorrente e de volume; a resposta hoje é evasiva."
+  },
+  {
+   "prio": "P1",
+   "tema": "Autonomia de bateria",
+   "itens": [
+    "MLB4416170851",
+    "MLB6999691306",
+    "MLB6107517744"
+   ],
+   "pergunta": "Quantas horas dura a carga de cada um (ventilador dobrável, ventilador de pé, fone)?",
+   "porque": "Pergunta repetida em 3 anúncios; hoje a Gabriela responde que não tem a informação."
+  },
+  {
+   "prio": "P1",
+   "tema": "Display expositor: base, ganchos e carga",
+   "itens": [
+    "MLB7015633274",
+    "MLB7024275356",
+    "MLB5063526253"
+   ],
+   "pergunta": "Profundidade da base, comprimento e diâmetro do gancho, e peso máximo suportado por gancho/por prateleira.",
+   "porque": "3 perguntas distintas em agosto e 2 entradas evasivas já gravadas."
+  },
+  {
+   "prio": "P2",
+   "tema": "Peças de reposição",
+   "itens": [
+    "MLB4893593273",
+    "MLB4308562565"
+   ],
+   "pergunta": "Vendem lâmina/agulha de reposição da máquina de corte? Vendem tampa avulsa das garrafas?",
+   "porque": "Duas perguntas de compradores que já compraram — é receita recorrente sem resposta."
+  },
+  {
+   "prio": "P2",
+   "tema": "Cabo de força: bitola e condutor",
+   "itens": [
+    "MLB4480491787",
+    "MLB5063497535"
+   ],
+   "pergunta": "É 100% cobre? A bitola é 3 × 0,75 mm²?",
+   "porque": "Comprador técnico; a ficha não traz a bitola."
+  },
+  {
+   "prio": "P2",
+   "tema": "Política de desconto, atacado e origem do envio",
+   "itens": [
+    "todos"
+   ],
+   "pergunta": "Qual a regra de desconto que a Gabriela pode oferecer (se alguma)? Qual a faixa de atacado? De qual cidade sai o envio?",
+   "porque": "13 perguntas de preço/desconto e várias de 'de onde vocês são' em agosto, respondidas caso a caso por humano."
+  },
+  {
+   "prio": "P2",
+   "tema": "Nota fiscal e CNPJ",
+   "itens": [
+    "todos"
+   ],
+   "pergunta": "Confirmar a resposta padrão: emitem NF-e em todo pedido? Aceitam compra com CNPJ para crédito de ICMS?",
+   "porque": "Pergunta recorrente e de resposta simples — só precisa ser canonizada."
+  }
+ ],
+ "correcoes_de_anuncio": [
+  {
+   "item_id": "MLB4893593273",
+   "campo": "Largura mínima/máxima de corte",
+   "problema": "Ficha diz mínima 100 cm e máxima 43,18 cm — mínimo maior que o máximo.",
+   "efeito": "A Gabriela lê a ficha e não consegue responder tamanho de tela com segurança."
+  },
+  {
+   "item_id": "MLB5937516136",
+   "campo": "Retenção térmica",
+   "problema": "Atributos dizem 12h frio e 12h quente; a descrição diz 'mantém por até 8 hrs'.",
+   "efeito": "Fonte contraditória: risco de reclamação por informação divergente."
+  },
+  {
+   "item_id": "MLB4412879467",
+   "campo": "Taxa de transferência de dados",
+   "problema": "Ficha declara 3.840 Tbps — valor impossível para USB 3.0.",
+   "efeito": "Comprador técnico perguntou justamente a versão do USB."
+  },
+  {
+   "item_id": "MLB6404883104",
+   "campo": "Layout",
+   "problema": "Ficha diz QWERTZ; o título diz ABNT2 (que é QWERTY brasileiro).",
+   "efeito": "Contradição dentro do próprio anúncio."
+  },
+  {
+   "item_id": "MLB6888908160",
+   "campo": "Dimensões",
+   "problema": "Largura da máquina 4 cm com altura 180 cm e peso 46 kg — incoerente.",
+   "efeito": "Impede responder qualquer pergunta de espaço/instalação."
+  },
+  {
+   "item_id": "MLB6526654944",
+   "campo": "Voltagem da bateria",
+   "problema": "Declara 12V para um aparador recarregável de mão.",
+   "efeito": "Dado provavelmente errado na ficha."
+  }
+ ]
+}
