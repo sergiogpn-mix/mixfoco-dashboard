@@ -1,28 +1,26 @@
 """
 sac_automacoes.py — Regras de automação do SAC usadas pelo dashboard.
 
-Hoje contém a automação de **agradecimento pós-venda**: quando o comprador responde à
-mensagem de pós-venda da Gabriela só com um agradecimento, o backend responde com um
-template e encerra a conversa. Este módulo concentra:
+Hoje contém a automação de **agradecimento ao aviso de envio**: quando o comprador responde à
+mensagem "seu pedido já foi enviado" da Gabriela só com um agradecimento, o backend responde
+"de nada" (sem pedido de avaliação) e registra o evento. A regra roda no backend, no módulo
+`agradecer_positivo.py` (momento "enviado"). Este módulo concentra o que a tela precisa:
 
-  - o classificador `classificar_agradecimento(texto)` (regex, sem IA), que o dashboard usa
-    no testador e que o backend deve reproduzir (ou importar) na ingestão de mensagens;
-  - a renderização do template (`renderizar_template`);
+  - `classificar_agradecimento(texto)`: ESPELHO da porta de texto do backend (`_e_fecho`),
+    para o testador da tela dizer o que o backend faria. Se mudar lá, mude aqui.
+  - `renderizar_template`: a mesma renderização que o backend usa;
   - a configuração padrão e as rotas da API que o dashboard consome.
 
-Contrato da API (backend):
+Contrato da API (backend, já implementado):
   GET/PUT /mixfoco/sac/automacoes/agradecimento
       {"ativo": bool, "dry_run": bool, "janela_dias": int, "template": str,
        "palavras_bloqueio": [str], "loja": str}
   GET     /mixfoco/sac/automacoes/agradecimento/log?de=YYYY-MM-DD&ate=YYYY-MM-DD
-      {"eventos": [{"data": str, "pedido": str, "loja": str, "comprador": str,
+      {"eventos": [{"data": str, "pedido": str, "loja": str, "momento": str,
                     "texto_recebido": str, "classe": str, "motivo": str,
                     "respondido": bool, "dry_run": bool, "resposta": str}]}
 """
 from __future__ import annotations
-
-import re
-import unicodedata
 
 ROTA_CONFIG = "/mixfoco/sac/automacoes/agradecimento"
 ROTA_LOG = f"{ROTA_CONFIG}/log"
@@ -39,134 +37,74 @@ CONFIG_PADRAO = {
     "janela_dias": 15,
     "template": TEMPLATE_PADRAO,
     "palavras_bloqueio": [],
-    "loja": "SKYCONECTA",
+    "loja": "",          # vazio = assina com a loja do pedido
 }
 
-# Limites de tamanho do texto limpo (sem emoji/pontuação)
-LIMITE_CURTO = 80      # até aqui: agradecimento puro
-LIMITE_LONGO = 200     # acima disso: nunca automatiza
+# ── Espelho de agradecer_positivo._e_fecho (backend) ──────────────────────────
+# Um fecho é CURTO: "Obrigada!" tem 9 caracteres; uma reclamação educada tem 600.
+MAX_CARACTERES_DE_FECHO = 120
 
-PALAVRAS_POSITIVAS = [
-    "obg", "obgd", "obrigad", "brigad", "valeu", "vlw", "ok", "okay", "okk", "blz", "beleza",
-    "perfeito", "show", "top", "maravilha", "otimo", "otima", "certo", "combinado", "grat",
-    "gratidao", "thanks", "thank", "legal", "bacana", "massa", "joia", "excelente",
-]
-EMOJIS_POSITIVOS = "👍❤💜💙💚🙏😊🥰😘👏🤝✅🙌😍"
-
-PALAVRAS_BLOQUEIO = [
-    "nao chegou", "nao recebi", "atras", "cade", "quebr", "defeit", "errad", "faltou", "falta",
-    "troc", "devolu", "cancel", "reembols", "danific", "problem", "nao funciona", "nao liga",
-    "nota fiscal", "garantia", "quando", "prazo", "ainda nao", "amass", "rasg", "vazando",
-    "diferente", "outro produto", "reclama", "estorn", "extravi", "roubad", "sumiu",
-]
-
-# Palavras que podem acompanhar um agradecimento sem mudar o sentido.
-PALAVRAS_NEUTRAS = {
-    "de", "nada", "muito", "muita", "pela", "pelo", "por", "atencao", "bom", "boa", "dia", "tarde",
-    "noite", "gabriela", "gariela", "equipe", "tudo", "ate", "mais", "logo", "entao", "ta", "ja",
-    "sim", "e", "a", "o", "os", "as", "um", "uma", "meu", "minha", "amigo", "amiga", "querida",
-    "querido", "deus", "abencoe", "retorno", "resposta", "informacao", "informacoes", "aviso",
-    "mesmo", "demais", "voces", "voce", "vc", "vcs", "pessoal", "aguardo", "aguardando", "vou",
-    "acompanhar", "fico", "no", "na", "em", "que", "com", "pra", "para", "chegar", "chegou",
-    "recebido", "entendi", "certinho", "tranquilo", "otimo", "super", "bem", "ai", "aqui", "agora",
-}
-
-_RE_EMOJI = re.compile(
-    "[\U0001F300-\U0001FAFF☀-➿⭐⭕️‍❤]+"
+# Marcas de positivo. "Ok" sozinho NÃO está aqui de propósito: é acuso de
+# recebimento, não gratidão — responder "de nada" a um "ok" soa automático.
+PALAVRAS_POSITIVAS = (
+    "obrigad", "obg", "valeu", "vlw", "agradeç", "agradec",
+    "perfeito", "ótimo", "otimo", "excelente", "maravilh", "show",
+    "tudo certo", "tudo bem", "deu certo", "resolvido", "resolveu",
+    "adorei", "amei", "top",
 )
-_RE_PONTUACAO = re.compile(r"[^\w\s]", re.UNICODE)
 
-
-def normalizar(texto: str) -> str:
-    """minúsculas, sem acento, sem emoji/pontuação, espaços únicos."""
-    t = unicodedata.normalize("NFKD", texto or "")
-    t = "".join(c for c in t if not unicodedata.combining(c))
-    t = _RE_EMOJI.sub(" ", t.lower())
-    t = _RE_PONTUACAO.sub(" ", t)
-    return " ".join(t.split())
-
-
-def _tem_positivo(texto_norm: str, texto_bruto: str) -> bool:
-    if any(e in (texto_bruto or "") for e in EMOJIS_POSITIVOS):
-        return True
-    palavras = texto_norm.split()
-    return any(p.startswith(pos) for p in palavras for pos in PALAVRAS_POSITIVAS)
-
-
-def _bloqueio_encontrado(texto_norm: str, extras=()) -> str | None:
-    for b in list(PALAVRAS_BLOQUEIO) + [normalizar(x) for x in (extras or []) if x]:
-        if b and b in texto_norm:
-            return b
-    return None
-
-
-def _palavras_restantes(texto_norm: str) -> list[str]:
-    restantes = []
-    for p in texto_norm.split():
-        if p in PALAVRAS_NEUTRAS or any(p.startswith(pos) for pos in PALAVRAS_POSITIVAS):
-            continue
-        if p.isdigit() or len(p) <= 1:
-            continue
-        restantes.append(p)
-    return restantes
+# Basta UMA destas para não responder, mesmo com "obrigado" junto.
+PALAVRAS_BLOQUEIO = (
+    "não", "nao", "ainda", "mas ", "porém", "porem", "problema", "defeito",
+    "quebrad", "errad", "falta", "atras", "demor", "cancel", "reembols",
+    "devolv", "troca", "estorno", "reclama", "procon", "processo",
+)
 
 
 def classificar_agradecimento(texto: str, palavras_bloqueio_extra=()) -> dict:
-    """Classifica a resposta do comprador ao pós-venda.
+    """O que o backend faria com esta mensagem do comprador.
 
-    Retorna {"classe": "agradecimento" | "ambiguo" | "outro", "motivo": str,
-             "auto_responder": bool}.
-    Só "agradecimento" dispara a resposta automática. "ambiguo" deve ser decidido
-    pela IA no backend; "outro" nunca automatiza.
+    Retorna {"classe": "agradecimento" | "outro", "motivo": str, "auto_responder": bool}.
+    Só "agradecimento" dispara a resposta; as outras portas do backend (última fala é
+    do cliente, uma resposta por pedido, aviso de envio na conversa, janela, assunto
+    sensível, pedido não entregue) não dependem do texto e não são simuladas aqui.
     """
-    bruto = (texto or "").strip()
-    if not bruto:
+    t = (texto or "").strip()
+    if not t:
         return _res("outro", "mensagem vazia")
-    if "?" in bruto or "？" in bruto:
-        return _res("outro", "contém pergunta")
+    if len(t) > MAX_CARACTERES_DE_FECHO:
+        return _res("outro", f"longa demais para ser fecho ({len(t)} caracteres)")
+    if "?" in t or "？" in t:
+        return _res("outro", "tem pergunta — quer resposta, não agradecimento")
 
-    norm = normalizar(bruto)
-    bloqueio = _bloqueio_encontrado(norm, palavras_bloqueio_extra)
-    if bloqueio:
-        return _res("outro", f"palavra de bloqueio: '{bloqueio}'")
-
-    if len(norm) > LIMITE_LONGO:
-        return _res("outro", f"texto longo ({len(norm)} caracteres)")
-
-    if not _tem_positivo(norm, bruto):
-        return _res("outro", "sem palavra de agradecimento")
-
-    restantes = _palavras_restantes(norm)
-    if len(restantes) > 3:
-        return _res("ambiguo", f"agradecimento misturado com outro assunto: {' '.join(restantes[:6])}")
-    if len(norm) > LIMITE_CURTO:
-        return _res("ambiguo", f"agradecimento em texto médio ({len(norm)} caracteres)")
-
-    return _res("agradecimento", "agradecimento puro")
+    baixo = t.lower()
+    extras = [str(x).strip().lower() for x in (palavras_bloqueio_extra or []) if str(x).strip()]
+    for n in list(PALAVRAS_BLOQUEIO) + extras:
+        if n in baixo:
+            return _res("outro", f"tem marca de insatisfação: '{n.strip()}'")
+    if not any(p in baixo for p in PALAVRAS_POSITIVAS):
+        return _res("outro", "sem marca de positivo")
+    return _res("agradecimento", "fecho positivo")
 
 
 def _res(classe: str, motivo: str) -> dict:
     return {"classe": classe, "motivo": motivo, "auto_responder": classe == "agradecimento"}
 
 
-# ── Template ───────────────────────────────────────────────────────────────────
-
-class _Seguro(dict):
-    def __missing__(self, k):
-        return "{" + k + "}"
-
+# ── Template (mesma renderização de agradecer_positivo.renderizar_enviado) ────
 
 def primeiro_nome(nome_completo: str) -> str:
-    partes = [p for p in (nome_completo or "").strip().split() if p]
-    if not partes:
-        return "tudo bem"
-    return partes[0].capitalize()
+    partes = [p for p in (nome_completo or "").replace("—", " ").split() if p]
+    return partes[0].capitalize() if partes else ""
 
 
 def renderizar_template(template: str, nome_comprador: str = "", loja: str = "") -> str:
-    return (template or "").format_map(
-        _Seguro(primeiro_nome=primeiro_nome(nome_comprador), loja=(loja or "").strip())
-    )
+    """Sem nome, some a vírgula com o nome: "De nada!" em vez de "De nada, !"."""
+    t = template or TEMPLATE_PADRAO
+    nome = primeiro_nome(nome_comprador)
+    if not nome:
+        t = t.replace(", {primeiro_nome}", "").replace("{primeiro_nome}", "")
+    return t.replace("{primeiro_nome}", nome).replace("{loja}", (loja or "").strip())
 
 
 def config_com_padrao(cfg: dict | None) -> dict:
@@ -175,7 +113,10 @@ def config_com_padrao(cfg: dict | None) -> dict:
     for k, v in (cfg or {}).items():
         if v is not None:
             out[k] = v
-    out["palavras_bloqueio"] = [str(x).strip() for x in (out.get("palavras_bloqueio") or []) if str(x).strip()]
+    bloq = out.get("palavras_bloqueio") or []
+    if isinstance(bloq, str):
+        bloq = bloq.splitlines()
+    out["palavras_bloqueio"] = [str(x).strip() for x in bloq if str(x).strip()]
     try:
         out["janela_dias"] = int(out.get("janela_dias") or CONFIG_PADRAO["janela_dias"])
     except (TypeError, ValueError):

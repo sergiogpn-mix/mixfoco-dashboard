@@ -42,10 +42,11 @@ Ao atualizar a base: gere um novo JSON datado em `ml-ia/kb/` (não edite o anter
 
 ## Automações do SAC (`sac_automacoes.py`)
 
-Aba SAC → ⚙️ Automações configura o **agradecimento automático no pós-venda** (plano e contrato
-da API em `docs/plano_auto_agradecimento_pos_venda.md`). O classificador
-`classificar_agradecimento` vive em `sac_automacoes.py`, sem IA, e é a referência que o backend
-deve reproduzir. Ao mudar listas de palavras, rode os casos de teste antes de commitar.
+Aba SAC → ⚙️ Automações configura o **agradecimento automático ao aviso de envio** (plano e
+contrato da API em `docs/plano_auto_agradecimento_pos_venda.md`). A regra roda no backend
+(`agradecer_positivo.py`, momento "enviado"); `sac_automacoes.classificar_agradecimento` é um
+espelho da porta de texto do backend, usado só pelo testador da tela. Se as listas de palavras
+mudarem lá, mude aqui também.
 
 ## Convenções
 

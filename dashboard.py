@@ -1132,9 +1132,11 @@ with aba_sac:
                 extras = [l.strip() for l in auto_bloqueio.splitlines() if l.strip()]
                 res = sac_automacoes.classificar_agradecimento(auto_teste, extras)
                 if res["classe"] == "agradecimento":
-                    st.success(f"✅ Responderia automaticamente — {res['motivo']}")
-                elif res["classe"] == "ambiguo":
-                    st.warning(f"🤔 Ambíguo: a IA do backend decide — {res['motivo']}")
+                    st.success(
+                        f"✅ Texto passa — {res['motivo']}. O backend ainda confere: última fala "
+                        "é do cliente, aviso de envio na conversa, janela, uma resposta por pedido "
+                        "e pedido não entregue."
+                    )
                 else:
                     st.error(f"⛔ Não responde (vai para humano) — {res['motivo']}")
 
